@@ -83,3 +83,5 @@ Desktop ink is fixed to the screen; it does not follow a web page or editor cont
 | `tests/Sketchora.Core.Tests` | History branching/isolation/capacity and preferences recovery/round-trip tests |
 
 Uses C#, .NET 10 LTS, WPF and CommunityToolkit.Mvvm. See [docs/PLAN.md](docs/PLAN.md) and [docs/WINDOWS-CHECKLIST.md](docs/WINDOWS-CHECKLIST.md).
+
+The proposed second-preview scope is in [docs/VERSION-2-PLAN.md](docs/VERSION-2-PLAN.md).
