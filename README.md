@@ -22,6 +22,10 @@ A Windows desktop annotation app for explaining code, drawing sketches and point
 - .NET 10 SDK to build/run from source. A self-contained publish includes the runtime.
 - Mouse, touchscreen or compatible pen. Pressure and palm rejection depend on device/driver support and are not yet certified.
 
+## Download the Windows preview
+
+[Download Sketchora-win-x64](https://github.com/Nyi-Nyi-Zin/Sketchora/actions/runs/41740441761/artifacts/13279444646) from the successful [Windows build](https://github.com/Nyi-Nyi-Zin/Sketchora/actions/runs/41740441761). GitHub may require sign-in to download an Actions artifact. Extract the ZIP and open `Sketchora.exe`; keep the extracted files together. This is a portable development preview, not an installer or a completed Windows usability test. Actions artifacts expire; newer builds appear in the repository's Actions tab.
+
 ## Run
 
 From a terminal at the repository root on Windows:

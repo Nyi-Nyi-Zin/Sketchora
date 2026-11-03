@@ -9,11 +9,20 @@
 - The build validates C# and WPF XAML compilation. It does not establish native window/input correctness.
 - WinForms DPI analyzer WFO0003 is specifically suppressed with an explanation in the app project: WPF owns startup and PerMonitorV2 awareness via the manifest; WinForms is used for tray/capture only.
 
-## Pending
+## Windows CI completed on 4 November 2026
+
+- Code commit: `1dc163bb5730bc2af490430048e0adba2d67f49f`.
+- [GitHub Actions run 41740441761](https://github.com/Nyi-Nyi-Zin/Sketchora/actions/runs/41740441761): successful.
+- Windows Release build: 0 warnings, 0 errors.
+- Core tests on Windows: 10 passed, 0 failed, 0 skipped.
+- Self-contained Windows x64 publish and artifact upload: successful.
+- Artifact: `Sketchora-win-x64`, 71,279,661 bytes, artifact ID `13279444646`.
+- This validates Windows compilation, automated core tests and packaging; it does not validate the interactive overlay, hardware input or meeting capture.
+
+## Pending manual checks
 
 - Native Windows UI execution and visual inspection.
 - Touch/pen input, DPI and capture behavior.
 - Receiver-side Zoom/Google Meet sharing and recordings.
-- GitHub Actions execution (requires the repository to exist and code to be pushed).
 
 See WINDOWS-CHECKLIST.md for the manual release gate. A successful cross-build does not validate desktop interaction.
