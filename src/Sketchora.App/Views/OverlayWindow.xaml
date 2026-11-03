@@ -1,0 +1,20 @@
+<Window x:Class="Sketchora.App.Views.OverlayWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Sketchora annotation layer" WindowStyle="None" ResizeMode="NoResize"
+    AllowsTransparency="True" Background="Transparent" Topmost="True"
+    ShowInTaskbar="False" ShowActivated="False" Focusable="False">
+  <Grid x:Name="SurfaceRoot" ClipToBounds="True">
+    <InkCanvas x:Name="InkSurface" Background="#01000000" Focusable="False"
+        PreviewMouseLeftButtonDown="OnShapeStart" PreviewMouseMove="OnShapeMove"
+        PreviewMouseLeftButtonUp="OnShapeEnd" LostMouseCapture="OnCaptureLost"
+        PreviewTouchDown="OnTouchDown" PreviewTouchMove="OnTouchMove" PreviewTouchUp="OnTouchEnd"
+        LostTouchCapture="OnTouchCaptureLost" PreviewStylusDown="OnStylusDown" />
+    <Canvas IsHitTestVisible="False">
+      <Polyline x:Name="ShapePreview" Visibility="Collapsed" StrokeLineJoin="Round"
+          StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+      <Ellipse x:Name="PointerHalo" Width="38" Height="38" Visibility="Collapsed"
+          Fill="#40FBBF24" Stroke="#E6FBBF24" StrokeThickness="2" />
+    </Canvas>
+  </Grid>
+</Window>

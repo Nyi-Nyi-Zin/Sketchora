@@ -1,0 +1,13 @@
+**/bin/
+**/obj/
+*_wpftmp.csproj
+.vs/
+.idea/
+TestResults/
+artifacts/
+*.user
+*.suo
+*.pfx
+*.snk
+.env
+.env.*
