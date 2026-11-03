@@ -58,6 +58,14 @@ internal static class NativeMethods
     internal static extern bool UnregisterHotKey(nint hwnd, int id);
     [DllImport("dwmapi.dll")]
     internal static extern int DwmFlush();
+    [DllImport("user32.dll", SetLastError = true)]
+    internal static extern nint GetDC(nint hwnd);
+    [DllImport("user32.dll")]
+    internal static extern int ReleaseDC(nint hwnd, nint dc);
+    [DllImport("gdi32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static extern bool BitBlt(nint destination, int x, int y, int width, int height,
+        nint source, int sourceX, int sourceY, uint rasterOperation);
 
     internal static Rect PrimaryDisplayBounds()
     {

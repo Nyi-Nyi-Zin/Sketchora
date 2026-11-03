@@ -139,12 +139,7 @@ internal sealed class AppController : IDisposable
             await Task.Delay(180);
             if (_hidden) return;
             NativeMethods.DwmFlush();
-            var bounds = NativeMethods.PrimaryDisplayBounds();
-            using var bitmap = new Bitmap(bounds.Width, bounds.Height, PixelFormat.Format32bppArgb);
-            using (var graphics = Graphics.FromImage(bitmap))
-                graphics.CopyFromScreen(bounds.Left, bounds.Top, 0, 0,
-                    new System.Drawing.Size(bounds.Width, bounds.Height),
-                    CopyPixelOperation.SourceCopy | CopyPixelOperation.CaptureBlt);
+            using var bitmap = ScreenCapture.CapturePrimaryDisplay();
             bitmap.Save(dialog.FileName, ImageFormat.Png);
             _model.Notice = "PNG saved. Only the currently visible canvas was captured.";
         }
