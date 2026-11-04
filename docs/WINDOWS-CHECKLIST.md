@@ -24,3 +24,19 @@ These are pending checks, not a report that the app passed them.
 - [ ] Reopen restores preferences; malformed preferences still permit launch.
 
 Do not claim Windows/pen/capture certification until these checks are completed on the supported configuration.
+
+## Version 2 lesson workflow
+
+- [ ] Create at least three boards, change their individual backgrounds, add ink/text, navigate and verify each history is isolated.
+- [ ] Duplicate and rename a board; delete it, restore it and verify its contents and undo history.
+- [ ] Save all desktop/board contents to .sketchora, quit, reopen and continue editing.
+- [ ] New/Open/Quit: check Save/Discard/Cancel, canceled Save as and an unwritable destination.
+- [ ] Open malformed/oversized/unsupported files and invalid ink; current edits remain intact.
+- [ ] Open at another DPI/canvas size: compare Fit, Original positions and Cancel.
+- [ ] Enter actual Burmese/English multi-line text with the teaching keyboard/IME. Test Done/Cancel, drag, edit, delete and emergency Hide while the editor is open.
+- [ ] Draw fading strokes of 1/3/5 seconds; unfinished strokes do not expire. Check page/mode switching and Clear laser.
+- [ ] Verify fading ink never appears in lesson files, recovery, permanent undo or PNG exports.
+- [ ] Edit continuously for over 30 seconds, interrupt the process, restore recovery and verify the original named file is unchanged.
+- [ ] Configure shortcuts, swap the two keys and simulate a collision with another app; previous valid bindings and tray recovery remain available.
+- [ ] Collapse/expand and restart the toolbar; common tools, selected tool/mode and saved preferences stay usable.
+- [ ] Repeat the 60-minute screen-sharing check with pages, text and temporary ink; record latency and memory observations.

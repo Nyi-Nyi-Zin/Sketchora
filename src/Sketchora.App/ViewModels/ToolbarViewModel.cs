@@ -4,52 +4,76 @@ using Sketchora.Core;
 
 namespace Sketchora.App.ViewModels;
 
-public enum DrawingTool { Pen, Highlighter, Eraser, Line, Arrow, Rectangle, Ellipse }
-public enum BoardStyle { Desktop, White, Black }
-public enum CanvasAction { Undo, Redo, Clear, Export, Hide, Exit }
+public enum DrawingTool { Pen, Highlighter, Eraser, Line, Arrow, Rectangle, Ellipse, Text, Fading }
+public enum CanvasAction
+{
+    Undo, Redo, Clear, Export, Hide, Exit, NewLesson, OpenLesson, SaveLesson, SaveLessonAs,
+    CycleBoard, ToggleBackground, PreviousPage, NextPage, AddPage, DuplicatePage, RenamePage, DeletePage, RestorePage,
+    ClearTemporary, Settings
+}
 
 public sealed class ToolbarViewModel : ObservableObject
 {
-    private bool _isDrawing;
-    private bool _showInk = true;
-    private bool _haloEnabled;
-    private bool _touchEnabled;
-    private bool _isExpanded = true;
-    private DrawingTool _tool;
-    private BoardStyle _board;
-    private string _color;
-    private double _thickness;
-    private int _strokeCount;
-    private string _notice = "Ready · Desktop ink stays fixed when content scrolls.";
+    private readonly List<IRelayCommand> _commands = [];
+    private bool _isDrawing, _isBusy;
+    private bool _showInk = true, _haloEnabled, _touchEnabled, _isExpanded;
+    private DrawingTool _tool, _previousTool;
+    private string _color, _notice = "Ready · Desktop ink stays fixed when content scrolls.";
+    private string _lessonLabel = "Untitled lesson", _pageLabel = "Board 1 / 1", _boardLabel = "Board: desktop", _shortcutHint = "";
+    private double _thickness, _textSize;
+    private int _fadeSeconds, _itemCount;
+    private bool _canUndo, _canRedo, _canPrevious, _canNext, _canDelete, _canRestore, _isDesktop = true, _canAdd = true;
 
     public ToolbarViewModel(AppPreferences preferences, Action<CanvasAction> dispatch)
     {
-        _color = preferences.Color;
-        _thickness = preferences.Thickness;
-        _haloEnabled = preferences.PointerHalo;
-        _touchEnabled = preferences.TouchDrawing;
-        ToggleDrawCommand = new RelayCommand(() => IsDrawing = !IsDrawing);
-        SelectToolCommand = new RelayCommand<DrawingTool>(tool => { Tool = tool; ShowInk = true; IsDrawing = true; });
-        SelectColorCommand = new RelayCommand<string>(color => { if (color is not null) Color = color; });
-        CycleBoardCommand = new RelayCommand(() =>
-        {
-            Board = (BoardStyle)(((int)Board + 1) % 3);
-            ShowInk = true;
-            IsDrawing = Board != BoardStyle.Desktop;
-        });
-        UndoCommand = new RelayCommand(() => dispatch(CanvasAction.Undo), () => CanUndo);
-        RedoCommand = new RelayCommand(() => dispatch(CanvasAction.Redo), () => CanRedo);
-        ClearCommand = new RelayCommand(() => dispatch(CanvasAction.Clear), () => StrokeCount > 0);
-        ExportCommand = new RelayCommand(() => dispatch(CanvasAction.Export));
+        _color = preferences.Color; _thickness = preferences.Thickness;
+        _haloEnabled = preferences.PointerHalo; _touchEnabled = preferences.TouchDrawing;
+        _isExpanded = preferences.ExpandedToolbar; _fadeSeconds = preferences.FadeSeconds; _textSize = preferences.TextSize;
+        UpdateShortcuts(preferences.DrawShortcut, preferences.HideShortcut);
+        ToggleDrawCommand = Track(new RelayCommand(() => IsDrawing = !IsDrawing, () => !IsBusy));
+        SelectToolCommand = Track(new RelayCommand<DrawingTool>(tool => { Tool = tool; ShowInk = true; IsDrawing = true; }, _ => !IsBusy));
+        SelectColorCommand = Track(new RelayCommand<string>(color => { if (color is not null) Color = color; }, _ => !IsBusy));
+        IRelayCommand Make(CanvasAction action, Func<bool>? enabled = null) =>
+            Track(new RelayCommand(() => dispatch(action), () => !IsBusy && (enabled?.Invoke() ?? true)));
+        CycleBoardCommand = Make(CanvasAction.CycleBoard);
+        ToggleBackgroundCommand = Make(CanvasAction.ToggleBackground, () => !_isDesktop);
+        UndoCommand = Make(CanvasAction.Undo, () => _canUndo);
+        RedoCommand = Make(CanvasAction.Redo, () => _canRedo);
+        ClearCommand = Make(CanvasAction.Clear, () => _itemCount > 0);
+        ExportCommand = Make(CanvasAction.Export);
+        ExitCommand = Make(CanvasAction.Exit);
+        NewLessonCommand = Make(CanvasAction.NewLesson);
+        OpenLessonCommand = Make(CanvasAction.OpenLesson);
+        SaveLessonCommand = Make(CanvasAction.SaveLesson);
+        SaveLessonAsCommand = Make(CanvasAction.SaveLessonAs);
+        PreviousPageCommand = Make(CanvasAction.PreviousPage, () => _canPrevious);
+        NextPageCommand = Make(CanvasAction.NextPage, () => _canNext);
+        AddPageCommand = Make(CanvasAction.AddPage, () => _canAdd);
+        DuplicatePageCommand = Make(CanvasAction.DuplicatePage, () => _canAdd && !_isDesktop);
+        RenamePageCommand = Make(CanvasAction.RenamePage, () => _canDelete || _boardLabel != "Board: desktop");
+        DeletePageCommand = Make(CanvasAction.DeletePage, () => _canDelete);
+        RestorePageCommand = Make(CanvasAction.RestorePage, () => _canRestore);
+        ClearTemporaryCommand = Make(CanvasAction.ClearTemporary);
+        SettingsCommand = Make(CanvasAction.Settings);
         HideCommand = new RelayCommand(() => dispatch(CanvasAction.Hide));
-        ExitCommand = new RelayCommand(() => dispatch(CanvasAction.Exit));
         CollapseCommand = new RelayCommand(() => IsExpanded = !IsExpanded);
     }
 
+    private T Track<T>(T command) where T : IRelayCommand { _commands.Add(command); return command; }
+    private void RefreshCommands() { foreach (var command in _commands) command.NotifyCanExecuteChanged(); }
+    public bool IsBusy
+    {
+        get => _isBusy;
+        set { if (SetProperty(ref _isBusy, value)) { if (value) IsDrawing = false; RefreshCommands(); } }
+    }
     public bool IsDrawing
     {
         get => _isDrawing;
-        set { if (SetProperty(ref _isDrawing, value)) { OnPropertyChanged(nameof(ModeLabel)); OnPropertyChanged(nameof(ModeActionLabel)); } }
+        set
+        {
+            if (value && IsBusy) return;
+            if (SetProperty(ref _isDrawing, value)) { OnPropertyChanged(nameof(ModeLabel)); OnPropertyChanged(nameof(ModeActionLabel)); }
+        }
     }
     public string ModeLabel => IsDrawing ? "DRAW" : "INTERACT";
     public string ModeActionLabel => IsDrawing ? "Use desktop" : "Start drawing";
@@ -57,37 +81,45 @@ public sealed class ToolbarViewModel : ObservableObject
     public bool HaloEnabled { get => _haloEnabled; set => SetProperty(ref _haloEnabled, value); }
     public bool TouchEnabled { get => _touchEnabled; set => SetProperty(ref _touchEnabled, value); }
     public bool IsExpanded { get => _isExpanded; set => SetProperty(ref _isExpanded, value); }
-    public DrawingTool Tool { get => _tool; set => SetProperty(ref _tool, value); }
-    public BoardStyle Board
+    public DrawingTool Tool
     {
-        get => _board;
-        set { if (SetProperty(ref _board, value)) OnPropertyChanged(nameof(BoardLabel)); }
+        get => _tool;
+        set { if (value == DrawingTool.Text && _tool != DrawingTool.Text) _previousTool = _tool; SetProperty(ref _tool, value); }
     }
-    public string BoardLabel => Board switch { BoardStyle.White => "Board: white", BoardStyle.Black => "Board: black", _ => "Board: desktop" };
-    public string Color { get => _color; set => SetProperty(ref _color, value); }
+    public void ReturnFromText() => Tool = _previousTool;
+    public string Color { get => _color; set { if (LessonStore.IsColor(value)) SetProperty(ref _color, value); } }
     public double Thickness { get => _thickness; set => SetProperty(ref _thickness, Math.Clamp(value, 1, 20)); }
-    public int StrokeCount
-    {
-        get => _strokeCount;
-        private set { if (SetProperty(ref _strokeCount, value)) ClearCommand.NotifyCanExecuteChanged(); }
-    }
+    public double TextSize { get => _textSize; set => SetProperty(ref _textSize, Math.Clamp(value, 8, 200)); }
+    public IReadOnlyList<int> FadeDurations { get; } = new[] { 1, 3, 5 };
+    public int FadeSeconds { get => _fadeSeconds; set => SetProperty(ref _fadeSeconds, value is 1 or 3 or 5 ? value : 3); }
     public string Notice { get => _notice; set => SetProperty(ref _notice, value); }
-    public bool CanUndo { get; private set; }
-    public bool CanRedo { get; private set; }
+    public string LessonLabel { get => _lessonLabel; private set => SetProperty(ref _lessonLabel, value); }
+    public string PageLabel { get => _pageLabel; private set => SetProperty(ref _pageLabel, value); }
+    public string BoardLabel { get => _boardLabel; private set => SetProperty(ref _boardLabel, value); }
+    public string ShortcutHint { get => _shortcutHint; private set => SetProperty(ref _shortcutHint, value); }
+    public void UpdateShortcuts(char draw, char hide) => ShortcutHint = $"Ctrl + Alt + {draw} · Draw / interact\nCtrl + Alt + {hide} · Hide / show all";
 
-    public void UpdateHistory(bool undo, bool redo, int count)
+    public void UpdateWorkspace(LessonWorkspace workspace, int strokeCount)
     {
-        CanUndo = undo;
-        CanRedo = redo;
-        StrokeCount = count;
-        UndoCommand.NotifyCanExecuteChanged();
-        RedoCommand.NotifyCanExecuteChanged();
+        _isDesktop = workspace.IsDesktop;
+        _canUndo = workspace.CanUndo; _canRedo = workspace.CanRedo;
+        _itemCount = strokeCount + workspace.ActivePage.Texts.Count;
+        _canPrevious = workspace.ActivePageIndex > 0 || workspace.IsDesktop;
+        _canNext = workspace.ActivePageIndex < workspace.PageCount - 1 || workspace.IsDesktop;
+        _canDelete = !workspace.IsDesktop && workspace.PageCount > 1;
+        _canRestore = workspace.CanRestorePage;
+        _canAdd = workspace.PageCount < LessonStore.MaximumPages;
+        LessonLabel = (workspace.FilePath is { } path ? Path.GetFileName(path) : "Untitled lesson") + (workspace.IsDirty ? " *" : "");
+        PageLabel = $"{workspace.ActivePageIndex + 1} / {workspace.PageCount} · {workspace.BoardPageName}";
+        BoardLabel = workspace.IsDesktop ? "Board: desktop" : workspace.ActivePage.Background == PageBackground.White ? "Board: white" : "Board: black";
+        RefreshCommands();
     }
 
     public IRelayCommand ToggleDrawCommand { get; }
     public IRelayCommand<DrawingTool> SelectToolCommand { get; }
     public IRelayCommand<string> SelectColorCommand { get; }
     public IRelayCommand CycleBoardCommand { get; }
+    public IRelayCommand ToggleBackgroundCommand { get; }
     public IRelayCommand UndoCommand { get; }
     public IRelayCommand RedoCommand { get; }
     public IRelayCommand ClearCommand { get; }
@@ -95,4 +127,17 @@ public sealed class ToolbarViewModel : ObservableObject
     public IRelayCommand HideCommand { get; }
     public IRelayCommand ExitCommand { get; }
     public IRelayCommand CollapseCommand { get; }
+    public IRelayCommand NewLessonCommand { get; }
+    public IRelayCommand OpenLessonCommand { get; }
+    public IRelayCommand SaveLessonCommand { get; }
+    public IRelayCommand SaveLessonAsCommand { get; }
+    public IRelayCommand PreviousPageCommand { get; }
+    public IRelayCommand NextPageCommand { get; }
+    public IRelayCommand AddPageCommand { get; }
+    public IRelayCommand DuplicatePageCommand { get; }
+    public IRelayCommand RenamePageCommand { get; }
+    public IRelayCommand DeletePageCommand { get; }
+    public IRelayCommand RestorePageCommand { get; }
+    public IRelayCommand ClearTemporaryCommand { get; }
+    public IRelayCommand SettingsCommand { get; }
 }

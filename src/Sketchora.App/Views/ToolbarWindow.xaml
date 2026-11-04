@@ -80,11 +80,25 @@
         <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
         <Button Content="{Binding ModeActionLabel}" Command="{Binding ToggleDrawCommand}"
             Background="#4F46E5" BorderBrush="#818CF8" FontWeight="SemiBold"
-            AutomationProperties.Name="Toggle drawing and desktop interaction" ToolTip="Ctrl + Alt + D" />
+            AutomationProperties.Name="Toggle drawing and desktop interaction" ToolTip="{Binding ShortcutHint}" />
         <TextBlock Grid.Column="1" Text="{Binding ModeLabel}" Foreground="#A5B4FC" FontSize="11"
             FontWeight="Bold" VerticalAlignment="Center" Margin="10,0,3,0" />
       </Grid>
+      <TextBlock Text="{Binding LessonLabel}" TextTrimming="CharacterEllipsis" Foreground="#A7B1C9" FontSize="11" Margin="5,0,5,6" ToolTip="{Binding LessonLabel}" />
+      <TextBlock Text="{Binding Tool, StringFormat='Tool: {0}'}" Foreground="#A5B4FC" FontSize="11" Margin="5,0,5,6" />
+      <UniformGrid Rows="1" Columns="4">
+        <Button Content="Pen" Command="{Binding SelectToolCommand}" CommandParameter="{x:Static vm:DrawingTool.Pen}" />
+        <Button Content="Laser" Command="{Binding SelectToolCommand}" CommandParameter="{x:Static vm:DrawingTool.Fading}" />
+        <Button Content="Board" Command="{Binding CycleBoardCommand}" />
+        <Button Content="Save" Command="{Binding SaveLessonCommand}" />
+      </UniformGrid>
       <StackPanel Visibility="{Binding IsExpanded, Converter={StaticResource BoolVisibility}}">
+        <UniformGrid Rows="1" Columns="4">
+          <Button Content="New" Command="{Binding NewLessonCommand}" ToolTip="New lesson · Ctrl + N when toolbar is focused" />
+          <Button Content="Open" Command="{Binding OpenLessonCommand}" ToolTip="Open .sketchora lesson" />
+          <Button Content="Save" Command="{Binding SaveLessonCommand}" ToolTip="Save editable lesson" />
+          <Button Content="Save as" Command="{Binding SaveLessonAsCommand}" />
+        </UniformGrid>
         <TextBlock Text="DRAWING TOOLS" Foreground="#8793B2" FontSize="10" FontWeight="Bold" Margin="5,9,0,4" />
         <WrapPanel>
           <RadioButton Style="{StaticResource Tool}" Content="Pen" GroupName="Tools" Command="{Binding SelectToolCommand}"
@@ -101,7 +115,17 @@
               CommandParameter="{x:Static vm:DrawingTool.Rectangle}" IsChecked="{Binding Tool, Mode=OneWay, Converter={StaticResource Equals}, ConverterParameter={x:Static vm:DrawingTool.Rectangle}}" />
           <RadioButton Style="{StaticResource Tool}" Content="Oval" GroupName="Tools" Command="{Binding SelectToolCommand}"
               CommandParameter="{x:Static vm:DrawingTool.Ellipse}" IsChecked="{Binding Tool, Mode=OneWay, Converter={StaticResource Equals}, ConverterParameter={x:Static vm:DrawingTool.Ellipse}}" />
+          <RadioButton Style="{StaticResource Tool}" Content="Text" GroupName="Tools" Command="{Binding SelectToolCommand}"
+              CommandParameter="{x:Static vm:DrawingTool.Text}" IsChecked="{Binding Tool, Mode=OneWay, Converter={StaticResource Equals}, ConverterParameter={x:Static vm:DrawingTool.Text}}" ToolTip="Click canvas to add text; drag labels to move; double-click to edit" />
+          <RadioButton Style="{StaticResource Tool}" Content="Fading" GroupName="Tools" Command="{Binding SelectToolCommand}"
+              CommandParameter="{x:Static vm:DrawingTool.Fading}" IsChecked="{Binding Tool, Mode=OneWay, Converter={StaticResource Equals}, ConverterParameter={x:Static vm:DrawingTool.Fading}}" ToolTip="Temporary laser strokes; excluded from lessons and PNG exports" />
         </WrapPanel>
+        <StackPanel Orientation="Horizontal" Margin="5,6">
+          <TextBlock Text="Fade after" VerticalAlignment="Center" Margin="0,0,8,0" />
+          <ComboBox ItemsSource="{Binding FadeDurations}" SelectedItem="{Binding FadeSeconds}" Width="52" Foreground="#171B29" AutomationProperties.Name="Temporary ink lifetime in seconds" />
+          <TextBlock Text=" seconds" VerticalAlignment="Center" />
+          <Button Content="Clear laser" Command="{Binding ClearTemporaryCommand}" Padding="6,4" MinHeight="32" />
+        </StackPanel>
         <TextBlock Text="COLOR &amp; WIDTH" Foreground="#8793B2" FontSize="10" FontWeight="Bold" Margin="5,13,0,4" />
         <UniformGrid Rows="1" Columns="7">
           <Button Background="#6366F1" Command="{Binding SelectColorCommand}" CommandParameter="#6366F1" AutomationProperties.Name="Indigo ink" ToolTip="Indigo" Padding="0" />
@@ -119,7 +143,20 @@
               Value="{Binding Thickness}" VerticalAlignment="Center" AutomationProperties.Name="Ink width" />
           <TextBlock Grid.Column="2" Text="{Binding Thickness, StringFormat={}{0:0} px}" HorizontalAlignment="Right" VerticalAlignment="Center" />
         </Grid>
-        <Button Content="{Binding BoardLabel}" Command="{Binding CycleBoardCommand}" ToolTip="Cycle desktop, whiteboard and blackboard" />
+        <TextBlock Text="{Binding PageLabel}" TextWrapping="Wrap" Foreground="#A7B1C9" FontSize="11" Margin="5,8,5,4" />
+        <UniformGrid Rows="1" Columns="3">
+          <Button Content="Previous" Command="{Binding PreviousPageCommand}" />
+          <Button Content="Next" Command="{Binding NextPageCommand}" />
+          <Button Content="Add page" Command="{Binding AddPageCommand}" />
+        </UniformGrid>
+        <UniformGrid Rows="1" Columns="4">
+          <Button Content="Rename" Command="{Binding RenamePageCommand}" Padding="5,8" />
+          <Button Content="Copy" Command="{Binding DuplicatePageCommand}" />
+          <Button Content="Delete" Command="{Binding DeletePageCommand}" />
+          <Button Content="Restore" Command="{Binding RestorePageCommand}" ToolTip="Restore the last deleted board" />
+        </UniformGrid>
+        <Button Content="{Binding BoardLabel}" Command="{Binding CycleBoardCommand}" ToolTip="Switch between desktop and the selected board page" />
+        <Button Content="White / black page background" Command="{Binding ToggleBackgroundCommand}" />
         <WrapPanel>
           <CheckBox Content="Show ink" IsChecked="{Binding ShowInk}" />
           <CheckBox Content="Pointer halo" IsChecked="{Binding HaloEnabled}" />
@@ -133,7 +170,8 @@
         <Button Content="Save PNG" Command="{Binding ExportCommand}" ToolTip="Save primary screen with annotations; toolbar is omitted" />
         <Separator Background="#3A435B" Margin="4,10" />
         <TextBlock Text="{Binding Notice}" TextWrapping="Wrap" Foreground="#A7B1C9" FontSize="11" Margin="5,0,5,8" />
-        <TextBlock Text="Ctrl + Alt + D · Draw / interact&#10;Ctrl + Alt + H · Hide / show all" Foreground="#8793B2" FontSize="11" Margin="5,0,5,8" />
+        <TextBlock Text="{Binding ShortcutHint}" Foreground="#8793B2" FontSize="11" Margin="5,0,5,8" />
+        <Button Content="Shortcut settings" Command="{Binding SettingsCommand}" />
         <UniformGrid Rows="1" Columns="2">
           <Button Content="Hide all" Command="{Binding HideCommand}" />
           <Button Content="Quit" Command="{Binding ExitCommand}" />

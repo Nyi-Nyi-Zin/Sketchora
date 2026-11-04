@@ -26,3 +26,12 @@
 - Receiver-side Zoom/Google Meet sharing and recordings.
 
 See WINDOWS-CHECKLIST.md for the manual release gate. A successful cross-build does not validate desktop interaction.
+
+## Version 2 implementation — v0.2.0-preview.1
+
+- Lesson/page model, validated atomic save/load, recovery, Unicode text labels, temporary ink and configurable shortcuts are implemented in source.
+- Local .NET 10 cross-build: 0 warnings/errors, including the Windows adapter test project.
+- Local core tests: 42 passed, 0 failed, 0 skipped.
+- The six Windows adapter tests must run in Windows CI; they do not simulate actual pen/touch hardware, IME typing or meeting capture.
+- Windows CI result for this implementation will be recorded after the push.
+- The interactive/hardware checks above remain pending. This is a development preview, not a completed live-teaching certification.

@@ -14,6 +14,10 @@ public partial class ToolbarWindow : Window
         DataContext = model;
         InputBindings.Add(new KeyBinding(model.UndoCommand, new KeyGesture(Key.Z, ModifierKeys.Control)));
         InputBindings.Add(new KeyBinding(model.RedoCommand, new KeyGesture(Key.Y, ModifierKeys.Control)));
+        InputBindings.Add(new KeyBinding(model.SaveLessonCommand, new KeyGesture(Key.S, ModifierKeys.Control)));
+        InputBindings.Add(new KeyBinding(model.SaveLessonAsCommand, new KeyGesture(Key.S, ModifierKeys.Control | ModifierKeys.Shift)));
+        InputBindings.Add(new KeyBinding(model.OpenLessonCommand, new KeyGesture(Key.O, ModifierKeys.Control)));
+        InputBindings.Add(new KeyBinding(model.NewLessonCommand, new KeyGesture(Key.N, ModifierKeys.Control)));
     }
 
     private void OnHeaderDrag(object sender, MouseButtonEventArgs e)

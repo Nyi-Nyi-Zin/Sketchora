@@ -10,6 +10,9 @@
         PreviewMouseLeftButtonUp="OnShapeEnd" LostMouseCapture="OnCaptureLost"
         PreviewTouchDown="OnTouchDown" PreviewTouchMove="OnTouchMove" PreviewTouchUp="OnTouchEnd"
         LostTouchCapture="OnTouchCaptureLost" PreviewStylusDown="OnStylusDown" />
+    <InkCanvas x:Name="TemporarySurface" Background="Transparent" Focusable="False"
+        PreviewTouchDown="OnTouchDown" PreviewStylusDown="OnStylusDown" />
+    <Canvas x:Name="TextLayer" />
     <Canvas IsHitTestVisible="False">
       <Polyline x:Name="ShapePreview" Visibility="Collapsed" StrokeLineJoin="Round"
           StrokeStartLineCap="Round" StrokeEndLineCap="Round" />

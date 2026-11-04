@@ -1,7 +1,7 @@
 # Sketchora — Version 2 Plan
 
 Prepared: 4 November 2026.
-Status: proposed scope, ready for review; no Version 2 implementation is claimed.
+Status: implemented in source as v0.2.0-preview.1. Automated verification is recorded in VALIDATION.md; native hardware/input and receiver-side capture gates remain pending.
 Release label: **v0.2.0**, the second development preview after v0.1.0.
 
 ## 1. Product outcome

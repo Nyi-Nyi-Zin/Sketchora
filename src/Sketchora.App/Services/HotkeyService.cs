@@ -1,47 +1,37 @@
 using System.Windows;
 using System.Windows.Interop;
 using Sketchora.App.Interop;
+using Sketchora.Core;
 
 namespace Sketchora.App.Services;
 
-internal sealed class HotkeyService : IDisposable
+internal sealed class HotkeyService : IDisposable, IShortcutRegistrar
 {
     private readonly HwndSource _source;
-    private readonly Dictionary<int, Action> _actions = [];
-    private int _nextId = 1;
-
+    private readonly ShortcutBindings _bindings;
     public HotkeyService(Window window)
     {
-        var handle = new WindowInteropHelper(window).EnsureHandle();
-        _source = HwndSource.FromHwnd(handle) ?? throw new InvalidOperationException("No toolbar window handle.");
+        _source = HwndSource.FromHwnd(new WindowInteropHelper(window).EnsureHandle())
+            ?? throw new InvalidOperationException("No toolbar handle.");
+        _bindings = new ShortcutBindings(this);
         _source.AddHook(WndProc);
     }
-
-    public bool Register(uint key, Action action)
-    {
-        var id = _nextId++;
-        if (!NativeMethods.RegisterHotKey(_source.Handle, id,
-                NativeMethods.ModControl | NativeMethods.ModAlt | NativeMethods.ModNoRepeat, key))
-            return false;
-        _actions.Add(id, action);
-        return true;
-    }
-
+    public bool Configure(char draw, char hide, Action toggleDrawing, Action toggleVisibility) =>
+        AppPreferences.ValidShortcuts(draw, hide) && _bindings.TryConfigure(new Dictionary<uint, Action>
+        {
+            [draw] = toggleDrawing, [hide] = toggleVisibility
+        });
+    public bool Register(int id, uint key) => NativeMethods.RegisterHotKey(_source.Handle, id,
+        NativeMethods.ModControl | NativeMethods.ModAlt | NativeMethods.ModNoRepeat, key);
+    public void Unregister(int id) { if (!_source.IsDisposed) NativeMethods.UnregisterHotKey(_source.Handle, id); }
     private nint WndProc(nint hwnd, int message, nint wParam, nint lParam, ref bool handled)
     {
-        if (message == NativeMethods.WmHotkey && _actions.TryGetValue(wParam.ToInt32(), out var action))
-        {
-            action();
-            handled = true;
-        }
+        if (message == NativeMethods.WmHotkey) handled = _bindings.Invoke(wParam.ToInt32());
         return 0;
     }
-
     public void Dispose()
     {
-        if (_source.IsDisposed) return;
-        foreach (var id in _actions.Keys) NativeMethods.UnregisterHotKey(_source.Handle, id);
-        _source.RemoveHook(WndProc);
-        _actions.Clear();
+        _bindings.Dispose();
+        if (!_source.IsDisposed) _source.RemoveHook(WndProc);
     }
 }
