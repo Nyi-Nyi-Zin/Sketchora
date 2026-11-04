@@ -35,8 +35,9 @@ public sealed class WindowsAdapterTests
         var decoded = InkSerializer.Decode(InkSerializer.Encode(source));
         var stroke = Assert.Single(decoded);
         Assert.Equal(Colors.Red, stroke.DrawingAttributes.Color);
-        Assert.Equal(4, stroke.DrawingAttributes.Width);
-        Assert.Equal(10, stroke.StylusPoints[0].X);
+        // ISF stores converted ink units; a round-trip is not bit-exact in DIP.
+        Assert.InRange(stroke.DrawingAttributes.Width, 3.999, 4.001);
+        Assert.InRange(stroke.StylusPoints[0].X, 9.95, 10.05);
         Assert.InRange(stroke.StylusPoints[0].PressureFactor, 0.18f, 0.22f);
         Assert.InRange(stroke.StylusPoints[1].PressureFactor, 0.78f, 0.82f);
     });
