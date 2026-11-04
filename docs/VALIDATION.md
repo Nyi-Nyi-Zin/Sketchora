@@ -32,6 +32,11 @@ See WINDOWS-CHECKLIST.md for the manual release gate. A successful cross-build d
 - Lesson/page model, validated atomic save/load, recovery, Unicode text labels, temporary ink and configurable shortcuts are implemented in source.
 - Local .NET 10 cross-build: 0 warnings/errors, including the Windows adapter test project.
 - Local core tests: 42 passed, 0 failed, 0 skipped.
-- The six Windows adapter tests must run in Windows CI; they do not simulate actual pen/touch hardware, IME typing or meeting capture.
-- Windows CI result for this implementation will be recorded after the push.
+- The six Windows adapter tests ran in Windows CI; they do not simulate actual pen/touch hardware, IME typing or meeting capture.
+- [Windows CI run 41744279619](https://github.com/Nyi-Nyi-Zin/Sketchora/actions/runs/41744279619), code commit `b2d8e8fe518933e86f3d764542ca4913d2910b5b`: successful.
+- Windows Release build: 0 warnings and 0 errors. Full Windows suite: 42 core + 6 WPF adapter tests passed, 0 failures, 0 skips.
+- WPF tests cover ISF geometry/pressure/pen attributes, rejecting invalid ink before replacing work, canvas fitting/original positions, hidden-window/control construction on STA threads, and excluding temporary strokes from authored state.
+- The first Windows run exposed an exact-equality assertion against ISF's converted ink units (width 4 returned as 3.9999874017370027). The test now allows 0.001 DIP width and 0.05 DIP coordinate tolerance while still checking pressure and attributes.
+- Self-contained Windows x64 publish succeeded. Artifact `Sketchora-win-x64`: 71,310,007 bytes, ID `13282534262`.
+- [Download the preview](https://github.com/Nyi-Nyi-Zin/Sketchora/actions/runs/41744279619/artifacts/13282534262). This is a portable development build, not an installer or a completed hardware/meeting test.
 - The interactive/hardware checks above remain pending. This is a development preview, not a completed live-teaching certification.
