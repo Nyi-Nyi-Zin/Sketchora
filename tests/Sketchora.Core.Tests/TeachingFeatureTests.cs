@@ -36,6 +36,14 @@ public sealed class TeachingFeatureTests
         Assert.Equal("Restore me", Assert.Single(workspace.ActivePage.Texts).Text);
     }
     [Fact]
+    public void ReusingTheBlankBoardPreservesDesktopUndoAndRedo()
+    {
+        var workspace = new LessonWorkspace(); workspace.UpsertText(new TextLabel { Text = "Desktop annotation" });
+        workspace.ImportPages([new LessonPage { ImagePng = TinyPng }]); workspace.ShowDesktop(true);
+        Assert.True(workspace.CanUndo); workspace.Undo(); Assert.Empty(workspace.ActivePage.Texts);
+        workspace.Redo(); Assert.Equal("Desktop annotation", Assert.Single(workspace.ActivePage.Texts).Text);
+    }
+    [Fact]
     public void InvalidImportLeavesLessonAndUndoHistoryIntact()
     {
         var workspace = new LessonWorkspace(); workspace.ShowDesktop(false); workspace.UpsertText(new TextLabel { Text = "Original" });

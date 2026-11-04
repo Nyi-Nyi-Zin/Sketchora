@@ -81,11 +81,12 @@ public sealed class LessonWorkspace
                 added[i] = added[i] with { ImagePlacement = PageImageRect.Fit(size.Width, size.Height, _document.CanvasWidth, _document.CanvasHeight) };
             }
         var replaceBlank = IsOnlyBlankBoard;
+        var replacedPageId = _document.Pages[0].Id;
         var pages = replaceBlank ? added : _document.Pages.Select(page => page.Copy()).Concat(added).ToList();
         var next = _document with { SchemaVersion = 2, Pages = pages, ActivePageIndex = replaceBlank ? 0 : PageCount, IsDesktop = false };
         LessonStore.ValidateStorageSize(next); // Import is atomic: failures leave authored work and history intact.
         _document = next;
-        if (replaceBlank) _history.Clear();
+        if (replaceBlank) _history.Remove(replacedPageId);
         Revision++; Notify();
     }
     public void RenamePage(string name)
