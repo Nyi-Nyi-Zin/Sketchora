@@ -88,7 +88,8 @@ public sealed class TeachingAdapterTests
             var revision = workspace.Revision; overlay.SetFrozenFrame(Frame());
             Assert.True(model.FrozenScreen); Assert.True(model.CanNavigateCanvas); Assert.Equal(revision, workspace.Revision);
             Assert.Empty(workspace.Snapshot.Desktop.ImagePng); Assert.NotNull(((Image)overlay.FindName("PageImage")).Source);
-            model.IsDrawing = false;
+            model.Tool = DrawingTool.Pan; model.IsDrawing = false;
+            Assert.Equal(DrawingTool.Pen, model.Tool);
             Assert.False(model.FrozenScreen); Assert.Null(((Image)overlay.FindName("PageImage")).Source); Assert.Equal(revision, workspace.Revision);
             Assert.Single(InkSerializer.Decode(workspace.ActivePage.Ink));
         }
@@ -109,6 +110,8 @@ public sealed class TeachingAdapterTests
             Assert.Equal(2, transform.Matrix.M11); Assert.Equal(-50, transform.Matrix.OffsetX);
             Assert.Equal(original, workspace.ActivePage.Ink); Assert.Equal(revision, workspace.Revision);
             workspace.AddPage(); Assert.Equal(1, model.ZoomLevel); Assert.Equal(0, model.PanX); Assert.Equal(0, model.PanY);
+            model.Tool = DrawingTool.Pan; workspace.ShowDesktop(true);
+            Assert.Equal(DrawingTool.Pen, model.Tool); Assert.False(model.CanNavigateCanvas);
         }
         finally { overlay.Close(); }
     });

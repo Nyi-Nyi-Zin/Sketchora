@@ -42,7 +42,7 @@ public sealed class ToolbarViewModel : ObservableObject
     public bool FrozenScreen
     {
         get => _frozenScreen;
-        set { if (SetProperty(ref _frozenScreen, value)) { OnPropertyChanged(nameof(FreezeLabel)); OnPropertyChanged(nameof(CanNavigateCanvas)); RefreshCommands(); } }
+        set { if (SetProperty(ref _frozenScreen, value)) { RestoreAvailableTool(); OnPropertyChanged(nameof(FreezeLabel)); OnPropertyChanged(nameof(CanNavigateCanvas)); RefreshCommands(); } }
     }
     public string FreezeLabel => FrozenScreen ? "Unfreeze screen" : "Freeze screen";
     public bool SpotlightEnabled { get => _spotlightEnabled; set => SetProperty(ref _spotlightEnabled, value); }
@@ -207,9 +207,14 @@ public sealed class ToolbarViewModel : ObservableObject
         return label + "\n" + shortcut + (string.IsNullOrWhiteSpace(localKey) ? "" : "\n" + localKey + " (toolbar focused)");
     }
 
+    private void RestoreAvailableTool()
+    {
+        if (!CanNavigateCanvas && Tool == DrawingTool.Pan) Tool = DrawingTool.Pen;
+    }
     public void UpdateWorkspace(LessonWorkspace workspace, int strokeCount)
     {
         _isDesktop = workspace.IsDesktop;
+        RestoreAvailableTool();
         OnPropertyChanged(nameof(CanNavigateCanvas));
         _canUndo = workspace.CanUndo; _canRedo = workspace.CanRedo;
         _itemCount = strokeCount + workspace.ActivePage.Texts.Count;
