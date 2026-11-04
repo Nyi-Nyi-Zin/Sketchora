@@ -45,6 +45,13 @@ public sealed class LessonWorkspace
     }
 
     public void New(double width, double height) => Load(new LessonDocument { CanvasWidth = width, CanvasHeight = height });
+    public void ResizeCanvas(double width, double height)
+    {
+        if (_document.CanvasWidth == width && _document.CanvasHeight == height) return;
+        var next = _document with { CanvasWidth = width, CanvasHeight = height };
+        LessonStore.Validate(next);
+        _document = next; Revision++; Notify();
+    }
     public void MarkSaved(string path) { FilePath = path; _savedRevision = Revision; Notify(); }
     public void MarkSaved(string path, long revision)
     {

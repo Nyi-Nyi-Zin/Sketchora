@@ -67,6 +67,14 @@ internal static class NativeMethods
     internal static extern bool BitBlt(nint destination, int x, int y, int width, int height,
         nint source, int sourceX, int sourceY, uint rasterOperation);
 
+    [DllImport("user32.dll")]
+    private static extern int GetSystemMetrics(int index);
+    internal static Rect DesktopBounds()
+    {
+        var left = GetSystemMetrics(76); var top = GetSystemMetrics(77);
+        return new Rect { Left = left, Top = top, Right = left + GetSystemMetrics(78), Bottom = top + GetSystemMetrics(79) };
+    }
+
     internal static Rect PrimaryDisplayBounds()
     {
         var info = new MonitorInfo { Size = Marshal.SizeOf<MonitorInfo>() };

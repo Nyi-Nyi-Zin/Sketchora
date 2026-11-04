@@ -29,10 +29,11 @@ internal sealed class AppController : IDisposable
     private HotkeyService? _hotkeys;
     private Forms.NotifyIcon? _tray;
     private TextEditorWindow? _textEditor;
+    private RegionCaptureWindow? _capturePicker;
     private Task _recoveryTask = Task.CompletedTask;
     private long _lastRevision, _lastRecoveryRevision = -1;
     private long _lastEdit = Stopwatch.GetTimestamp(), _lastRecovery = Stopwatch.GetTimestamp();
-    private bool _hidden, _quitting, _busy, _savingRecovery, _recoveryFailed, _disposed;
+    private bool _ghost, _hidden, _quitting, _busy, _savingRecovery, _recoveryFailed, _disposed;
 
     public AppController()
     {
@@ -41,6 +42,12 @@ internal sealed class AppController : IDisposable
         _overlay = new OverlayWindow(_model, _workspace);
         _toolbar = new ToolbarWindow(_model);
         _toolbar.Closing += OnToolbarClosing;
+        _overlay.DisplayChanged += () =>
+        {
+            PositionToolbar();
+            var size = _overlay.CanvasSize;
+            _workspace.ResizeCanvas(size.Width, size.Height);
+        };
         _workspace.Changed += (_, _) =>
         {
             if (_lastRevision != _workspace.Revision)
@@ -63,14 +70,14 @@ internal sealed class AppController : IDisposable
         PositionToolbar();
         _workspace.New(_overlay.CanvasSize.Width, _overlay.CanvasSize.Height);
         _hotkeys = new HotkeyService(_toolbar);
-        if (!ApplyBindings(_preferences.DrawShortcut, _preferences.HideShortcut))
+        var shortcuts = _preferences.EffectiveShortcuts();
+        if (!ApplyBindings(shortcuts))
         {
-            if (ApplyBindings('D', 'H'))
-            {
-                _preferences = _preferences with { DrawShortcut = 'D', HideShortcut = 'H' };
-                _model.UpdateShortcuts('D', 'H');
-            }
-            _model.Notice = "A shortcut is in use. Open shortcut settings or use the tray recovery menu.";
+            // A conflict in an optional tool must not remove emergency recovery.
+            var recovery = ShortcutCatalog.Defaults();
+            foreach (var name in recovery.Keys.ToArray()) if (name is not ("Draw" or "Hide" or "Ghost")) recovery[name] = 0;
+            ApplyBindings(recovery);
+            _model.Notice = "Some shortcuts are in use. Recovery shortcuts were attempted; use the tray to recover and open shortcut settings.";
         }
         CreateTray();
         _autosave.Start();
@@ -87,12 +94,53 @@ internal sealed class AppController : IDisposable
             work.Top + 8, Math.Max(work.Top + 8, work.Bottom - Math.Min(_toolbar.ActualHeight, _toolbar.MaxHeight) - 8));
     }
 
-    private bool ApplyBindings(char draw, char hide) => _hotkeys?.Configure(draw, hide, ToggleDrawing,
-        () => { if (_hidden) ShowAll(); else EmergencyHide(); }) == true;
+    private bool ApplyBindings(IReadOnlyDictionary<string, uint> keys)
+    {
+        if (!ShortcutCatalog.IsValid(keys)) return false;
+        var requested = keys.Where(pair => pair.Value != 0).ToDictionary(pair => pair.Value,
+            pair => (Action)(() => InvokeShortcut(pair.Key)));
+        if (_hotkeys?.Configure(requested) != true) return false;
+        _model.UpdateShortcuts(keys);
+        return true;
+    }
+    private void InvokeShortcut(string name)
+    {
+        if (name == "Hide") { if (_hidden) ShowAll(); else EmergencyHide(); return; }
+        if (_busy) return;
+        if (name == "Draw") { ToggleDrawing(); return; }
+        if (name.StartsWith("Tool.", StringComparison.Ordinal) && Enum.TryParse<DrawingTool>(name[5..], out var tool))
+        {
+            if (_hidden) ShowAll();
+            _model.SelectToolCommand.Execute(tool); return;
+        }
+        switch (name)
+        {
+            case "ToggleInk": _model.ShowInk = !_model.ShowInk; return;
+            case "ToggleHalo": _model.HaloEnabled = !_model.HaloEnabled; return;
+            case "ToggleTouch": _model.TouchEnabled = !_model.TouchEnabled; return;
+            case "TogglePressure": _model.PressureEnabled = !_model.PressureEnabled; return;
+            case "TogglePalm": _model.PalmRejection = !_model.PalmRejection; return;
+            case "Collapse": _model.CollapseCommand.Execute(null); return;
+            case "WidthUp": _model.Thickness++; return;
+            case "WidthDown": _model.Thickness--; return;
+            case "NextColor":
+                var index = ToolbarViewModel.Palette.ToList().IndexOf(_model.Color);
+                _model.Color = ToolbarViewModel.Palette[(index + 1) % ToolbarViewModel.Palette.Count]; return;
+        }
+        if (Enum.TryParse<CanvasAction>(name, out var action)) Dispatch(action);
+    }
+    private void ToggleGhost()
+    {
+        if (_hidden) ShowAll();
+        _ghost = !_ghost;
+        if (_ghost) _toolbar.Hide(); else { _toolbar.Show(); _toolbar.Activate(); }
+        _model.Notice = _ghost ? "Ghost Mode: use its shortcut or the tray to restore the toolbar." : "Toolbar restored.";
+    }
     private void CreateTray()
     {
         var menu = new Forms.ContextMenuStrip();
         menu.Items.Add("Show toolbar", null, (_, _) => OnUi(ShowAll));
+        menu.Items.Add("Ghost Mode", null, (_, _) => OnUi(() => { if (!_busy) ToggleGhost(); }));
         menu.Items.Add("Draw / interact", null, (_, _) => OnUi(ToggleDrawing));
         menu.Items.Add("Hide all / release screen", null, (_, _) => OnUi(EmergencyHide));
         menu.Items.Add(new Forms.ToolStripSeparator());
@@ -104,12 +152,14 @@ internal sealed class AppController : IDisposable
     private void ToggleDrawing()
     {
         if (_busy) return;
-        ShowAll(); _model.ToggleDrawCommand.Execute(null);
+        if (_hidden) ShowAll();
+        _model.ToggleDrawCommand.Execute(null);
     }
     private void Dispatch(CanvasAction action)
     {
         if (action == CanvasAction.Hide) { EmergencyHide(); return; }
         if (_busy) return;
+        if (action == CanvasAction.Ghost) { ToggleGhost(); return; }
         try
         {
             switch (action)
@@ -131,7 +181,10 @@ internal sealed class AppController : IDisposable
                 case CanvasAction.DuplicatePage: _workspace.AddPage(duplicate: true); break;
                 case CanvasAction.DeletePage: _workspace.DeletePage(); break;
                 case CanvasAction.RestorePage: _workspace.RestorePage(); break;
-                case CanvasAction.Export: _ = RunAsync(ExportAsync); break;
+                case CanvasAction.Export: _ = RunAsync(() => CaptureAsync(false, false)); break;
+                case CanvasAction.CopyScreenshot: _ = RunAsync(() => CaptureAsync(true, false)); break;
+                case CanvasAction.RegionScreenshot: _ = RunAsync(() => CaptureAsync(false, true)); break;
+                case CanvasAction.CustomColor: _ = RunAsync(PickColorAsync); break;
                 case CanvasAction.NewLesson: _ = RunAsync(NewAsync); break;
                 case CanvasAction.OpenLesson: _ = RunAsync(OpenAsync); break;
                 case CanvasAction.SaveLesson: _ = RunAsync(async () => { await SaveAsync(); }); break;
@@ -150,6 +203,7 @@ internal sealed class AppController : IDisposable
         _busy = true;
         var wasDrawing = _model.IsDrawing;
         _model.IsBusy = true;
+        if (_ghost && !_hidden) _toolbar.Show();
         try { await _recoveryTask; await action(); }
         catch (OperationCanceledException) { }
         catch (Exception ex) when (IsExpected(ex)) { ReportError(ex); }
@@ -160,6 +214,7 @@ internal sealed class AppController : IDisposable
             {
                 _model.IsBusy = false;
                 if (!_hidden) _model.IsDrawing = wasDrawing;
+                if (_ghost) _toolbar.Hide();
             }
         }
     }
@@ -173,15 +228,16 @@ internal sealed class AppController : IDisposable
     }
     public void EmergencyHide()
     {
-        _hidden = true;
+        _hidden = true; _ghost = false;
         _model.IsDrawing = false;
         if (_textEditor is { IsVisible: true }) _textEditor.DialogResult = false;
+        if (_capturePicker is { IsVisible: true }) _capturePicker.DialogResult = false;
         _overlay.CancelPendingShape();
         _overlay.Hide(); _toolbar.Hide();
     }
     private void ShowAll()
     {
-        _overlay.Show(); _toolbar.Show(); _hidden = false; _toolbar.Activate();
+        _overlay.Show(); _toolbar.Show(); _hidden = false; _ghost = false; _toolbar.Activate();
     }
 
     private async Task<bool> SaveAsync(bool saveAs = false)
@@ -277,33 +333,69 @@ internal sealed class AppController : IDisposable
     }
     private Task SettingsAsync()
     {
-        LessonDialogs.Shortcuts(_toolbar, _preferences.DrawShortcut, _preferences.HideShortcut, (draw, hide) =>
+        LessonDialogs.Shortcuts(_toolbar, _preferences.EffectiveShortcuts(), keys =>
         {
-            if (!AppPreferences.ValidShortcuts(draw, hide)) return "Choose two different letters.";
-            if (!ApplyBindings(draw, hide)) return "A shortcut is already in use. Your previous bindings are unchanged.";
-            _preferences = _preferences with { DrawShortcut = draw, HideShortcut = hide };
-            _model.UpdateShortcuts(draw, hide);
+            if (!ShortcutCatalog.IsValid(keys)) return "Choose unique keys; Draw, Hide and Ghost must stay enabled.";
+            if (!ApplyBindings(keys)) return "A shortcut is already in use. Previous bindings are unchanged.";
+            _preferences = _preferences with { Shortcuts = new(keys) };
             var saved = SavePreferences();
             _model.Notice = saved ? "Shortcut settings applied." : "Shortcuts work for this session, but preferences could not be saved.";
             return null;
         });
         return Task.CompletedTask;
     }
-    private async Task ExportAsync()
+    private Task PickColorAsync()
     {
-        var dialog = new SaveFileDialog { Title = "Save PNG (temporary marks excluded)", Filter = "PNG image (*.png)|*.png", DefaultExt = ".png", AddExtension = true, FileName = $"Sketchora-{DateTime.Now:yyyyMMdd-HHmmss}.png" };
-        if (dialog.ShowDialog(_toolbar) != true) return;
+        if (ColorPicker.Choose(_toolbar, _model.Color) is { } color) _model.Color = color;
+        return Task.CompletedTask;
+    }
+    private async Task CaptureAsync(bool clipboard, bool region)
+    {
         try
         {
             _overlay.SuspendHalo = true; _toolbar.Hide();
             await Task.Delay(180);
             if (_hidden) return;
             NativeMethods.DwmFlush();
-            using var bitmap = ScreenCapture.CapturePrimaryDisplay();
-            bitmap.Save(dialog.FileName, ImageFormat.Png);
-            _model.Notice = "PNG saved. Temporary marks, halo and toolbar were excluded.";
+            using var desktop = ScreenCapture.CaptureDesktop();
+            System.Drawing.Bitmap? cropped = null;
+            try
+            {
+                if (region)
+                {
+                    var picker = new RegionCaptureWindow(desktop);
+                    _capturePicker = picker;
+                    bool? selected;
+                    try { selected = picker.ShowDialog(); }
+                    finally { _capturePicker = null; }
+                    if (selected != true || picker.Selection is not { } bounds) return;
+                    cropped = desktop.Clone(new Rectangle(bounds.X, bounds.Y, bounds.Width, bounds.Height), PixelFormat.Format32bppRgb);
+                    clipboard = picker.CopyRequested;
+                }
+                var bitmap = cropped ?? desktop;
+                if (_hidden) return;
+                if (clipboard)
+                {
+                    System.Windows.Clipboard.SetImage(ScreenCapture.ToBitmapSource(bitmap));
+                    _model.Notice = "Screenshot copied to clipboard.";
+                }
+                else
+                {
+                    // Restore an owner before opening the save dialog, including in Ghost Mode.
+                    _toolbar.Show();
+                    var dialog = new SaveFileDialog { Title = "Save screenshot", Filter = "PNG image (*.png)|*.png", DefaultExt = ".png", AddExtension = true, FileName = $"Sketchora-{DateTime.Now:yyyyMMdd-HHmmss}.png" };
+                    if (dialog.ShowDialog(_toolbar) != true) return;
+                    bitmap.Save(dialog.FileName, ImageFormat.Png);
+                    _model.Notice = "PNG saved. Temporary marks, halo and toolbar were excluded.";
+                }
+            }
+            finally { cropped?.Dispose(); }
         }
-        finally { _overlay.SuspendHalo = false; if (!_hidden && !_quitting) _toolbar.Show(); }
+        finally
+        {
+            _overlay.SuspendHalo = false;
+            if (!_hidden && !_quitting && !_ghost) _toolbar.Show();
+        }
     }
 
     private void StartRecoverySave()
@@ -356,7 +448,8 @@ internal sealed class AppController : IDisposable
         {
             Color = _model.Color, Thickness = _model.Thickness, PointerHalo = _model.HaloEnabled, TouchDrawing = _model.TouchEnabled,
             ToolbarLeft = _toolbar.Left, ToolbarTop = _toolbar.Top, ExpandedToolbar = _model.IsExpanded,
-            FadeSeconds = _model.FadeSeconds, TextSize = _model.TextSize
+            FadeSeconds = _model.FadeSeconds, TextSize = _model.TextSize,
+            ToolWidths = _model.ToolWidths, PressureEnabled = _model.PressureEnabled, PalmRejection = _model.PalmRejection
         };
         try { _store.Save(_preferences); return true; }
         catch (Exception ex) when (IsExpected(ex)) { _model.Notice = "Could not save preferences. " + ex.Message; return false; }

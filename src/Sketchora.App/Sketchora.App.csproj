@@ -9,7 +9,7 @@
     <AssemblyName>Sketchora</AssemblyName>
     <RootNamespace>Sketchora.App</RootNamespace>
     <PlatformTarget>x64</PlatformTarget>
-    <Version>0.2.0-preview.1</Version>
+    <Version>0.3.0-preview.1</Version>
     <Description>Screen annotation and whiteboard tools for teaching.</Description>
     <!-- WPF owns DPI awareness through the manifest. WinForms is used only for
          the tray and screen capture, not for application startup/windows. -->

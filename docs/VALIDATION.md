@@ -40,3 +40,16 @@ See WINDOWS-CHECKLIST.md for the manual release gate. A successful cross-build d
 - Self-contained Windows x64 publish succeeded. Artifact `Sketchora-win-x64`: 71,310,007 bytes, ID `13282534262`.
 - [Download the preview](https://github.com/Nyi-Nyi-Zin/Sketchora/actions/runs/41744279619/artifacts/13282534262). This is a portable development build, not an installer or a completed hardware/meeting test.
 - The interactive/hardware checks above remain pending. This is a development preview, not a completed live-teaching certification.
+
+
+## Version 3 local verification — 4 November 2026
+
+- Base GitHub commit: `38bb053d51713a6be2a078e306f0264dada82e68`.
+- Final compiler: .NET SDK 10.0.403 on Linux, cross-targeting Windows.
+- Full solution Release build: passed, **0 warnings / 0 errors**, including both test projects.
+- Executed core tests: **53 passed / 0 failed / 0 skipped**. Result: `v3-core.trx`.
+- Windows adapter suite: 14 tests compiled, **not executed** on this Linux host. Eight new adapter tests cover the added tools/input/capture behavior.
+- Self-contained Windows x64 publish: succeeded. The portable package was cross-built; it has not been launched on Windows.
+- XAML/project XML parsing and `git diff --check`: passed.
+- The user explicitly approved pushing this update to `Nyi-Nyi-Zin/Sketchora`. Windows CI results will be recorded after the upload.
+- Physical pen/multi-touch/proximity behavior, mixed-DPI and hot-plug alignment, Burmese IME, real region/clipboard interaction, Ghost Mode native recovery and receiver-side Zoom/Meet capture remain manual verification items. No claim of fully verified Epic Pen parity is made.

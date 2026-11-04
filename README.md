@@ -2,11 +2,11 @@
 
 A Windows desktop app for annotating code, drawing sketches and explaining lessons while sharing your display.
 
-**Version 2: v0.2.0-preview.1.** Editable lessons, board pages, text and fading ink are implemented. This is a development preview. Actual pen/touch hardware, display scaling and receiver-side Zoom/Meet capture still need manual validation; automated build/tests are not a substitute.
+**Version 3: v0.3.0-preview.1.** Adds 24 colours/custom RGB, configurable per-tool/action hotkeys, Ghost Mode, per-tool widths, region/clipboard screenshots, a virtual-desktop canvas, simultaneous finger ink and pen input controls. This is a development preview. Actual pen/touch hardware, display scaling and receiver-side Zoom/Meet capture still need manual validation; automated build/tests are not a substitute.
 
 ## Download or build
 
-**[Download Version 2 Windows preview](https://github.com/Nyi-Nyi-Zin/Sketchora/actions/runs/41744279619/artifacts/13282534262)** · [Verified Windows build and tests](https://github.com/Nyi-Nyi-Zin/Sketchora/actions/runs/41744279619)
+**Version 3 preview:** use a successful Version 3 run of the Windows build below. The earlier V2 artifact does not contain these additions.
 
 Open the latest successful run of [Build and test Sketchora](https://github.com/Nyi-Nyi-Zin/Sketchora/actions/workflows/build.yml), then download the **Sketchora-win-x64** artifact. GitHub may require sign-in. Extract the ZIP and open `Sketchora.exe`, keeping the extracted files together. It is a self-contained, unsigned Windows 11 x64 portable app, not an installer. Actions artifacts expire; use a current successful run.
 
@@ -21,7 +21,11 @@ dotnet run --project src/Sketchora.App/Sketchora.App.csproj
 
 - The app starts in **Interact** mode so you can click and type in the application underneath.
 - Choose **Start drawing** or a drawing tool to annotate. Choose **Use desktop** to resume normal app input.
-- Pen, highlighter, whole-stroke eraser, line, arrow, rectangle and ellipse are available with color/width controls and canvas-specific undo/redo.
+- Pen, highlighter, whole-stroke eraser, line, arrow, rectangle and ellipse are available with canvas-specific undo/redo.
+- Choose from **24 quick colours** or **Custom colour…** for a native RGB picker. Text labels have the same palette/picker.
+- Each tool remembers its own width across switches and restarts. Highlighter width is displayed at four times the base width.
+- **Pen pressure** controls variable-width pen input. **Touch drawing** accepts independent simultaneous finger strokes; each completed stroke is independently undoable. Shapes use one touch at a time.
+- **Ignore touch near pen** discards pending finger ink and blocks touches while a pen is in digitizer range. This is a proximity guard, not a universal hardware palm classifier. Passive capacitive pens report as fingers and have no pressure/proximity signal.
 - **Fading / Laser** strokes expire 1, 3 or 5 seconds after stroke completion. They are separate from permanent ink and are excluded from editable lessons, autosave, permanent undo/redo and PNG exports.
 - **Clear laser** removes temporary marks. **Clear** removes permanent ink and text on the active canvas and can be undone.
 - **Show ink** hides the annotations without deleting them. **Pointer halo** makes the mouse easier to follow.
@@ -50,25 +54,35 @@ Choose **Text**, then click an empty canvas location. The focused editor support
 
 To edit existing labels, select Text again, then **drag to move** or **double-click to edit/delete**. Text edits and moves are undoable. Fonts use local Myanmar Text/Segoe UI fallback; real Burmese input-method and glyph-rendering checks remain pending.
 
+## Screenshots
+
+**Save PNG** captures the combined Windows desktop, including annotations. **Copy screenshot** copies it to the clipboard. **Capture region…** shows a frozen desktop: drag in either direction, then choose **Save PNG** or **Copy**. Cancel/Escape leaves the lesson untouched. The screenshot is taken before the selection UI and save dialog appear; temporary ink, halo and toolbar are excluded. Display-layout changes cancel an in-progress region selection. Capture is limited to 100 million pixels.
+
 ## Toolbar, shortcuts and recovery
 
-The toolbar can be moved, collapsed and recovered through the tray. The compact view retains Pen, Laser, Board and Save actions and shows the current tool/mode.
+The toolbar can be moved, collapsed and recovered through the tray. **Ghost Mode** hides only the toolbar while ink and drawing remain active. Its shortcut restores it; **Show toolbar** in the tray also recovers it. **Hide all** remains a separate emergency action that hides ink and releases input. Ghost Mode is session-only and never hides the toolbar on startup. The compact view retains Pen, Laser, Board and Save actions and shows the current tool/mode.
 
-| Shortcut | Default action |
+All global bindings use **Ctrl + Alt**. Defaults:
+
+| Key | Action |
 | --- | --- |
-| Ctrl + Alt + D | Show app and toggle Draw/Interact |
-| Ctrl + Alt + H | Hide all and release screen input; press again to show |
-| Ctrl + S / Ctrl + Shift + S | Save / Save as while toolbar has focus |
-| Ctrl + O / Ctrl + N | Open / New while toolbar has focus |
-| Ctrl + Z / Ctrl + Y | Undo / Redo while toolbar has focus |
+| D / H / G | Draw–interact / emergency Hide–Show / Ghost Mode |
+| P / M / E | Pen / Highlighter / Eraser |
+| L / A / R / O | Line / Arrow / Rectangle / Ellipse |
+| T / F | Text / Fading ink |
+| Z / Y / C | Undo / Redo / Clear |
+| S / B / X | Save PNG / Copy screenshot / Capture region |
+| W | Desktop–board switch |
 
-**Shortcut settings** lets you choose two different Ctrl+Alt+letter bindings. Registration conflicts leave the previous bindings intact. The tray recovery menu is independent of global shortcuts. Emergency Hide also cancels the text editor safely. Closing the toolbar hides Sketchora; use Quit to exit.
+**Shortcut settings** lists every tool/action, including lesson/page actions and input/width/colour toggles. Choose letters, digits or F1–F24; optional actions can be Off. Draw, Hide and Ghost must stay enabled with distinct keys. Conflicts roll back the entire change and retain previous working bindings. **Defaults** resets the form before Apply. Existing V2 Draw/Hide choices migrate; colliding new defaults use free function keys. If startup registration conflicts, the app attempts recovery-only bindings and reports this; the tray stays available.
+
+Ctrl+S / Ctrl+Shift+S, Ctrl+O / Ctrl+N and Ctrl+Z / Ctrl+Y also work while the toolbar has focus. They do not intercept another application's normal Ctrl shortcuts. Closing the toolbar hides Sketchora; use Quit to exit.
 
 ## Screen sharing and limitations
 
 Use **entire display sharing** in Zoom/Meet. Individual-window sharing may omit the annotation overlay. Verify from a second participant device and in lesson recordings.
 
-The initial support target is the primary display on Windows 11 x64. Mixed-DPI/hot-plug behavior, actual touch/pen devices, pressure/palm rejection and meeting capture need the [manual checklist](docs/WINDOWS-CHECKLIST.md). Secure desktop, elevated apps and exclusive full-screen apps are outside the initial support target.
+The canvas and screenshots now span the **combined Windows virtual desktop**, including monitors left of or above the primary display. On display/DPI changes the canvas bounds update, unfinished touch ink is cancelled and the toolbar is recovered to the primary work area. Authored positions are preserved relative to the canvas origin; check alignment after rearranging displays. A spanning WPF window has a single coordinate/DPI transform: mixed-DPI accuracy, hot-plug behavior, actual touch/pen devices, pressure/proximity filtering and meeting capture still need the [manual checklist](docs/WINDOWS-CHECKLIST.md). Secure desktop, elevated apps and exclusive full-screen apps are outside the initial support target.
 
 General object rotation/resize, PDF, recording, cloud sync, collaboration, installers, automatic updates and macOS/Linux are not included. No account, backend or app analytics is used.
 
@@ -91,4 +105,4 @@ The full suite requires Windows because it includes WPF adapters and hidden-wind
 | `tests/Sketchora.Core.Tests` | Storage, history, page isolation, failure paths, expiry, save choices and shortcut rollback |
 | `tests/Sketchora.App.Tests` | Windows ink/pressure round-trip, fitting, UI construction and transient/permanent separation |
 
-See [Version 2 plan](docs/VERSION-2-PLAN.md), [validation record](docs/VALIDATION.md) and [Windows checklist](docs/WINDOWS-CHECKLIST.md).
+See [Version 3 additions](docs/VERSION-3-FEATURES.md), [Version 2 plan](docs/VERSION-2-PLAN.md), [validation record](docs/VALIDATION.md) and [Windows checklist](docs/WINDOWS-CHECKLIST.md).

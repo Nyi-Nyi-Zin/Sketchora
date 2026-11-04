@@ -16,11 +16,7 @@ internal sealed class HotkeyService : IDisposable, IShortcutRegistrar
         _bindings = new ShortcutBindings(this);
         _source.AddHook(WndProc);
     }
-    public bool Configure(char draw, char hide, Action toggleDrawing, Action toggleVisibility) =>
-        AppPreferences.ValidShortcuts(draw, hide) && _bindings.TryConfigure(new Dictionary<uint, Action>
-        {
-            [draw] = toggleDrawing, [hide] = toggleVisibility
-        });
+    public bool Configure(IReadOnlyDictionary<uint, Action> requested) => _bindings.TryConfigure(requested);
     public bool Register(int id, uint key) => NativeMethods.RegisterHotKey(_source.Handle, id,
         NativeMethods.ModControl | NativeMethods.ModAlt | NativeMethods.ModNoRepeat, key);
     public void Unregister(int id) { if (!_source.IsDisposed) NativeMethods.UnregisterHotKey(_source.Handle, id); }

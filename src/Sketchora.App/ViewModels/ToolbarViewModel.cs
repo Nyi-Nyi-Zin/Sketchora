@@ -9,7 +9,7 @@ public enum CanvasAction
 {
     Undo, Redo, Clear, Export, Hide, Exit, NewLesson, OpenLesson, SaveLesson, SaveLessonAs,
     CycleBoard, ToggleBackground, PreviousPage, NextPage, AddPage, DuplicatePage, RenamePage, DeletePage, RestorePage,
-    ClearTemporary, Settings
+    ClearTemporary, Settings, Ghost, CustomColor, CopyScreenshot, RegionScreenshot
 }
 
 public sealed class ToolbarViewModel : ObservableObject
@@ -21,15 +21,26 @@ public sealed class ToolbarViewModel : ObservableObject
     private string _color, _notice = "Ready · Desktop ink stays fixed when content scrolls.";
     private string _lessonLabel = "Untitled lesson", _pageLabel = "Board 1 / 1", _boardLabel = "Board: desktop", _shortcutHint = "";
     private double _thickness, _textSize;
+    private bool _pressureEnabled, _palmRejection;
+    private readonly Dictionary<string, double> _toolWidths;
+    public static IReadOnlyList<string> Palette { get; } = new[] {
+        "#6366F1", "#EF4444", "#F59E0B", "#10B981", "#38BDF8", "#FFFFFF", "#171B29", "#000000",
+        "#F43F5E", "#EC4899", "#D946EF", "#A855F7", "#8B5CF6", "#3B82F6", "#06B6D4", "#14B8A6",
+        "#22C55E", "#84CC16", "#EAB308", "#F97316", "#92400E", "#64748B", "#94A3B8", "#CBD5E1" };
+    public IReadOnlyList<string> Colors => Palette;
+    public Dictionary<string, double> ToolWidths => new(_toolWidths);
     private int _fadeSeconds, _itemCount;
     private bool _canUndo, _canRedo, _canPrevious, _canNext, _canDelete, _canRestore, _isDesktop = true, _canAdd = true;
 
     public ToolbarViewModel(AppPreferences preferences, Action<CanvasAction> dispatch)
     {
-        _color = preferences.Color; _thickness = preferences.Thickness;
+        _color = preferences.Color;
+        _toolWidths = preferences.ToolWidths is null ? new() : new(preferences.ToolWidths);
+        _thickness = _toolWidths.GetValueOrDefault(nameof(DrawingTool.Pen), preferences.Thickness);
+        _pressureEnabled = preferences.PressureEnabled; _palmRejection = preferences.PalmRejection;
         _haloEnabled = preferences.PointerHalo; _touchEnabled = preferences.TouchDrawing;
         _isExpanded = preferences.ExpandedToolbar; _fadeSeconds = preferences.FadeSeconds; _textSize = preferences.TextSize;
-        UpdateShortcuts(preferences.DrawShortcut, preferences.HideShortcut);
+        UpdateShortcuts(preferences.EffectiveShortcuts());
         ToggleDrawCommand = Track(new RelayCommand(() => IsDrawing = !IsDrawing, () => !IsBusy));
         SelectToolCommand = Track(new RelayCommand<DrawingTool>(tool => { Tool = tool; ShowInk = true; IsDrawing = true; }, _ => !IsBusy));
         SelectColorCommand = Track(new RelayCommand<string>(color => { if (color is not null) Color = color; }, _ => !IsBusy));
@@ -55,6 +66,10 @@ public sealed class ToolbarViewModel : ObservableObject
         RestorePageCommand = Make(CanvasAction.RestorePage, () => _canRestore);
         ClearTemporaryCommand = Make(CanvasAction.ClearTemporary);
         SettingsCommand = Make(CanvasAction.Settings);
+        GhostCommand = Make(CanvasAction.Ghost);
+        CustomColorCommand = Make(CanvasAction.CustomColor);
+        CopyScreenshotCommand = Make(CanvasAction.CopyScreenshot);
+        RegionScreenshotCommand = Make(CanvasAction.RegionScreenshot);
         HideCommand = new RelayCommand(() => dispatch(CanvasAction.Hide));
         CollapseCommand = new RelayCommand(() => IsExpanded = !IsExpanded);
     }
@@ -80,15 +95,31 @@ public sealed class ToolbarViewModel : ObservableObject
     public bool ShowInk { get => _showInk; set => SetProperty(ref _showInk, value); }
     public bool HaloEnabled { get => _haloEnabled; set => SetProperty(ref _haloEnabled, value); }
     public bool TouchEnabled { get => _touchEnabled; set => SetProperty(ref _touchEnabled, value); }
+    public bool PressureEnabled { get => _pressureEnabled; set => SetProperty(ref _pressureEnabled, value); }
+    public bool PalmRejection { get => _palmRejection; set => SetProperty(ref _palmRejection, value); }
     public bool IsExpanded { get => _isExpanded; set => SetProperty(ref _isExpanded, value); }
     public DrawingTool Tool
     {
         get => _tool;
-        set { if (value == DrawingTool.Text && _tool != DrawingTool.Text) _previousTool = _tool; SetProperty(ref _tool, value); }
+        set
+        {
+            if (_tool == value) return;
+            _toolWidths[_tool.ToString()] = _thickness;
+            if (value == DrawingTool.Text) _previousTool = _tool;
+            if (SetProperty(ref _tool, value))
+            {
+                _thickness = _toolWidths.GetValueOrDefault(value.ToString(), 4);
+                OnPropertyChanged(nameof(Thickness));
+            }
+        }
     }
     public void ReturnFromText() => Tool = _previousTool;
     public string Color { get => _color; set { if (LessonStore.IsColor(value)) SetProperty(ref _color, value); } }
-    public double Thickness { get => _thickness; set => SetProperty(ref _thickness, Math.Clamp(value, 1, 20)); }
+    public double Thickness
+    {
+        get => _thickness;
+        set { if (double.IsFinite(value) && SetProperty(ref _thickness, Math.Clamp(value, 1, 20))) _toolWidths[_tool.ToString()] = _thickness; }
+    }
     public double TextSize { get => _textSize; set => SetProperty(ref _textSize, Math.Clamp(value, 8, 200)); }
     public IReadOnlyList<int> FadeDurations { get; } = new[] { 1, 3, 5 };
     public int FadeSeconds { get => _fadeSeconds; set => SetProperty(ref _fadeSeconds, value is 1 or 3 or 5 ? value : 3); }
@@ -97,7 +128,8 @@ public sealed class ToolbarViewModel : ObservableObject
     public string PageLabel { get => _pageLabel; private set => SetProperty(ref _pageLabel, value); }
     public string BoardLabel { get => _boardLabel; private set => SetProperty(ref _boardLabel, value); }
     public string ShortcutHint { get => _shortcutHint; private set => SetProperty(ref _shortcutHint, value); }
-    public void UpdateShortcuts(char draw, char hide) => ShortcutHint = $"Ctrl + Alt + {draw} · Draw / interact\nCtrl + Alt + {hide} · Hide / show all";
+    public void UpdateShortcuts(IReadOnlyDictionary<string, uint> keys) => ShortcutHint =
+        $"Ctrl + Alt + {ShortcutCatalog.KeyName(keys["Draw"])} · Draw / interact\nCtrl + Alt + {ShortcutCatalog.KeyName(keys["Hide"])} · Hide / show all\nCtrl + Alt + {ShortcutCatalog.KeyName(keys["Ghost"])} · Ghost Mode";
 
     public void UpdateWorkspace(LessonWorkspace workspace, int strokeCount)
     {
@@ -140,4 +172,8 @@ public sealed class ToolbarViewModel : ObservableObject
     public IRelayCommand RestorePageCommand { get; }
     public IRelayCommand ClearTemporaryCommand { get; }
     public IRelayCommand SettingsCommand { get; }
+    public IRelayCommand GhostCommand { get; }
+    public IRelayCommand CustomColorCommand { get; }
+    public IRelayCommand CopyScreenshotCommand { get; }
+    public IRelayCommand RegionScreenshotCommand { get; }
 }

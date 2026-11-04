@@ -127,15 +127,14 @@
           <Button Content="Clear laser" Command="{Binding ClearTemporaryCommand}" Padding="6,4" MinHeight="32" />
         </StackPanel>
         <TextBlock Text="COLOR &amp; WIDTH" Foreground="#8793B2" FontSize="10" FontWeight="Bold" Margin="5,13,0,4" />
-        <UniformGrid Rows="1" Columns="7">
-          <Button Background="#6366F1" Command="{Binding SelectColorCommand}" CommandParameter="#6366F1" AutomationProperties.Name="Indigo ink" ToolTip="Indigo" Padding="0" />
-          <Button Background="#EF4444" Command="{Binding SelectColorCommand}" CommandParameter="#EF4444" AutomationProperties.Name="Red ink" ToolTip="Red" Padding="0" />
-          <Button Background="#F59E0B" Command="{Binding SelectColorCommand}" CommandParameter="#F59E0B" AutomationProperties.Name="Amber ink" ToolTip="Amber" Padding="0" />
-          <Button Background="#10B981" Command="{Binding SelectColorCommand}" CommandParameter="#10B981" AutomationProperties.Name="Green ink" ToolTip="Green" Padding="0" />
-          <Button Background="#38BDF8" Command="{Binding SelectColorCommand}" CommandParameter="#38BDF8" AutomationProperties.Name="Blue ink" ToolTip="Blue" Padding="0" />
-          <Button Background="#FFFFFF" Command="{Binding SelectColorCommand}" CommandParameter="#FFFFFF" AutomationProperties.Name="White ink" ToolTip="White" Padding="0" />
-          <Button Background="#171B29" Command="{Binding SelectColorCommand}" CommandParameter="#171B29" AutomationProperties.Name="Dark ink" ToolTip="Dark" Padding="0" />
-        </UniformGrid>
+        <ItemsControl ItemsSource="{Binding Colors}">
+          <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="8" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate><DataTemplate>
+            <Button Background="{Binding}" Command="{Binding DataContext.SelectColorCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                CommandParameter="{Binding}" ToolTip="{Binding}" AutomationProperties.Name="{Binding}" Padding="0" MinHeight="32" />
+          </DataTemplate></ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <Button Content="Custom colour…" Command="{Binding CustomColorCommand}" />
         <Grid Margin="5,8">
           <Grid.ColumnDefinitions><ColumnDefinition Width="26" /><ColumnDefinition /><ColumnDefinition Width="46" /></Grid.ColumnDefinitions>
           <Border Width="18" Height="18" Background="{Binding Color}" CornerRadius="9" BorderBrush="#8793B2" BorderThickness="1" />
@@ -161,13 +160,20 @@
           <CheckBox Content="Show ink" IsChecked="{Binding ShowInk}" />
           <CheckBox Content="Pointer halo" IsChecked="{Binding HaloEnabled}" />
           <CheckBox Content="Touch drawing" IsChecked="{Binding TouchEnabled}" />
+          <CheckBox Content="Pen pressure" IsChecked="{Binding PressureEnabled}" />
+          <CheckBox Content="Ignore touch near pen" IsChecked="{Binding PalmRejection}" />
         </WrapPanel>
         <UniformGrid Rows="1" Columns="3">
           <Button Content="Undo" Command="{Binding UndoCommand}" ToolTip="Ctrl + Z when toolbar is focused" />
           <Button Content="Redo" Command="{Binding RedoCommand}" ToolTip="Ctrl + Y when toolbar is focused" />
           <Button Content="Clear" Command="{Binding ClearCommand}" ToolTip="Clear active canvas; undo is available" />
         </UniformGrid>
-        <Button Content="Save PNG" Command="{Binding ExportCommand}" ToolTip="Save primary screen with annotations; toolbar is omitted" />
+        <Button Content="Save PNG" Command="{Binding ExportCommand}" ToolTip="Save all displays with annotations; toolbar is omitted" />
+        <UniformGrid Columns="2">
+          <Button Content="Copy screenshot" Command="{Binding CopyScreenshotCommand}" />
+          <Button Content="Capture region…" Command="{Binding RegionScreenshotCommand}" />
+        </UniformGrid>
+        <Button Content="Ghost Mode" Command="{Binding GhostCommand}" ToolTip="Hide toolbar and keep drawing. Ctrl+Alt+G restores it by default; the tray always recovers it." />
         <Separator Background="#3A435B" Margin="4,10" />
         <TextBlock Text="{Binding Notice}" TextWrapping="Wrap" Foreground="#A7B1C9" FontSize="11" Margin="5,0,5,8" />
         <TextBlock Text="{Binding ShortcutHint}" Foreground="#8793B2" FontSize="11" Margin="5,0,5,8" />

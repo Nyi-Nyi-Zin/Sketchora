@@ -40,3 +40,16 @@ Do not claim Windows/pen/capture certification until these checks are completed 
 - [ ] Configure shortcuts, swap the two keys and simulate a collision with another app; previous valid bindings and tray recovery remain available.
 - [ ] Collapse/expand and restart the toolbar; common tools, selected tool/mode and saved preferences stay usable.
 - [ ] Repeat the 60-minute screen-sharing check with pages, text and temporary ink; record latency and memory observations.
+
+
+## Version 3 additions — manual checks still required
+
+- [ ] Select all 24 swatches and a custom RGB colour, including on a text label; restart and check the last colour.
+- [ ] Set different widths for pen, highlighter and shapes; switch tools and restart; check each retained its width.
+- [ ] Use every tool hotkey while another application has focus. Apply a conflicting key and verify all old bindings still work; check Off, Defaults and F1–F24.
+- [ ] Enter Ghost Mode while drawing, switch tools and draw; restore with its hotkey and with the tray. Emergency Hide must release input. Restart must show the toolbar.
+- [ ] Save and clipboard-copy the full virtual desktop. Crop in both drag directions, copy/save, cancel/Escape, and cancel through emergency Hide; verify selection chrome is absent and annotations stay intact.
+- [ ] Test monitors left/above the primary, equal and mixed DPI, rearrangement, unplug/replug and display scaling; verify overlay/cursor/capture alignment on each display. Check the toolbar is reachable after changes.
+- [ ] Draw with two or more fingers at once; undo each completed stroke. Test touch off, page/tool changes mid-stroke, eraser, fading strokes and pressure from an active pen.
+- [ ] With an active pen in range, verify pending finger ink is cancelled and palm contact is suppressed; verify touch resumes after leaving range. A passive stylus has no proximity signal.
+- [ ] Verify Burmese IME labels and receiver-side Zoom/Meet screen sharing/recording on each display.

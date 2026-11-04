@@ -26,13 +26,18 @@ public partial class OverlayWindow : Window
     private TextLabel[] _renderedTexts = [];
     private Point? _shapeStart;
     private TouchDevice? _shapeTouch;
+    private readonly Dictionary<int, (Stroke Stroke, bool Fading)> _touchStrokes = [];
+    private readonly Dictionary<int, TouchDevice> _touchDevices = [];
+    private readonly HashSet<int> _penDevices = [];
+    internal int ActiveTouchStrokeCount => _touchStrokes.Count;
     private (Border Border, TextLabel Label, Point Start)? _textDrag;
     public event Action<Point, TextLabel?>? TextRequested;
+    public event Action? DisplayChanged;
     public Size CanvasSize
     {
         get
         {
-            var bounds = NativeMethods.PrimaryDisplayBounds();
+            var bounds = NativeMethods.DesktopBounds();
             var dpi = VisualTreeHelper.GetDpi(this);
             return new Size(bounds.Width / dpi.DpiScaleX, bounds.Height / dpi.DpiScaleY);
         }
@@ -61,7 +66,11 @@ public partial class OverlayWindow : Window
             Reposition();
             RefreshCanvas();
         };
-        IsVisibleChanged += (_, _) => UpdateHaloTimer();
+        IsVisibleChanged += (_, _) =>
+        {
+            if (!IsVisible) { _penDevices.Clear(); CancelTouchStrokes(); }
+            UpdateHaloTimer();
+        };
         Closed += (_, _) =>
         {
             _haloTimer.Stop();
@@ -79,6 +88,7 @@ public partial class OverlayWindow : Window
     }
     public void ClearTemporary()
     {
+        if (_touchStrokes.Values.Any(pending => pending.Fading)) CancelTouchStrokes();
         _temporary.Clear();
         TemporarySurface.Strokes.Clear();
         UpdateHaloTimer();
@@ -87,6 +97,7 @@ public partial class OverlayWindow : Window
     {
         CancelShape();
         CancelTextDrag();
+        CancelTouchStrokes();
         TemporarySurface.EditingMode = InkCanvasEditingMode.None;
         ClearTemporary();
     }
@@ -97,6 +108,7 @@ public partial class OverlayWindow : Window
         var page = _workspace.ActivePage;
         if (page.Id != _renderedPage)
         {
+            CancelTouchStrokes();
             CancelShape();
             CancelTextDrag();
             ClearTemporary();
@@ -105,6 +117,7 @@ public partial class OverlayWindow : Window
         {
             CancelShape();
             CancelTextDrag();
+            CancelTouchStrokes();
             InkSurface.EditingMode = InkCanvasEditingMode.None;
             InkSurface.Strokes.StrokesChanged -= OnStrokesChanged;
             InkSurface.Strokes = InkSerializer.Decode(page.Ink);
@@ -139,12 +152,18 @@ public partial class OverlayWindow : Window
         {
             CancelShape();
             CancelTextDrag();
+            CancelTouchStrokes();
             TemporarySurface.EditingMode = InkCanvasEditingMode.None;
             ClearTemporary();
         }
         if (e.PropertyName is nameof(ToolbarViewModel.IsDrawing) or nameof(ToolbarViewModel.Tool)
             or nameof(ToolbarViewModel.ShowInk) or nameof(ToolbarViewModel.Color) or nameof(ToolbarViewModel.Thickness)
-            or nameof(ToolbarViewModel.HaloEnabled) or nameof(ToolbarViewModel.TouchEnabled) or nameof(ToolbarViewModel.IsBusy)) ApplyState();
+            or nameof(ToolbarViewModel.HaloEnabled) or nameof(ToolbarViewModel.TouchEnabled) or nameof(ToolbarViewModel.IsBusy)
+            or nameof(ToolbarViewModel.PressureEnabled) or nameof(ToolbarViewModel.PalmRejection))
+        {
+            if (!_model.TouchEnabled || _model.IsBusy || (_model.PalmRejection && _penDevices.Count > 0)) CancelTouchStrokes();
+            ApplyState();
+        }
     }
 
     private bool IsShapeTool => _model.Tool is DrawingTool.Line or DrawingTool.Arrow or DrawingTool.Rectangle or DrawingTool.Ellipse;
@@ -157,19 +176,20 @@ public partial class OverlayWindow : Window
         {
             Color = color, Width = _model.Tool == DrawingTool.Highlighter ? _model.Thickness * 4 : _model.Thickness,
             Height = _model.Tool == DrawingTool.Highlighter ? _model.Thickness * 4 : _model.Thickness,
-            IsHighlighter = _model.Tool == DrawingTool.Highlighter, IgnorePressure = _model.Tool == DrawingTool.Highlighter,
+            IsHighlighter = _model.Tool == DrawingTool.Highlighter, IgnorePressure = !_model.PressureEnabled || _model.Tool == DrawingTool.Highlighter,
             FitToCurve = true
         };
         TemporarySurface.DefaultDrawingAttributes = new DrawingAttributes
         {
             Color = color, Width = _model.Thickness, Height = _model.Thickness, IgnorePressure = true, FitToCurve = true
         };
-        InkSurface.EditingMode = !drawing || IsShapeTool || _model.Tool is DrawingTool.Text or DrawingTool.Fading
+        InkSurface.EditingMode = !drawing || _touchStrokes.Count > 0 || IsShapeTool || _model.Tool is DrawingTool.Text or DrawingTool.Fading
             ? InkCanvasEditingMode.None : _model.Tool == DrawingTool.Eraser ? InkCanvasEditingMode.EraseByStroke : InkCanvasEditingMode.Ink;
-        TemporarySurface.EditingMode = fading ? InkCanvasEditingMode.Ink : InkCanvasEditingMode.None;
+        TemporarySurface.EditingMode = fading && _touchStrokes.Count == 0 ? InkCanvasEditingMode.Ink : InkCanvasEditingMode.None;
         TemporarySurface.IsHitTestVisible = fading;
         TemporarySurface.Visibility = _model.ShowInk && !_suspendHalo ? Visibility.Visible : Visibility.Hidden;
         InkSurface.Visibility = TextLayer.Visibility = _model.ShowInk ? Visibility.Visible : Visibility.Hidden;
+        TouchPreview.Visibility = _model.ShowInk && !_suspendHalo ? Visibility.Visible : Visibility.Hidden;
         TextLayer.IsHitTestVisible = drawing && _model.Tool == DrawingTool.Text;
         InkSurface.Background = drawing ? new SolidColorBrush(Color.FromArgb(1, 0, 0, 0)) : Brushes.Transparent;
         TemporarySurface.Background = fading ? new SolidColorBrush(Color.FromArgb(1, 0, 0, 0)) : Brushes.Transparent;
@@ -234,53 +254,105 @@ public partial class OverlayWindow : Window
         Canvas.SetLeft(drag.Border, drag.Label.X); Canvas.SetTop(drag.Border, drag.Label.Y);
         if (drag.Border.IsMouseCaptured) drag.Border.ReleaseMouseCapture();
     }
+    private bool CanTouch => _model.TouchEnabled && _model.IsDrawing && _model.ShowInk && !_model.IsBusy
+        && !(_model.PalmRejection && _penDevices.Count > 0);
+    internal bool BeginTouchStroke(int id, Point point)
+    {
+        if (!CanTouch || _touchStrokes.Count >= 32 || _touchStrokes.ContainsKey(id) || _model.Tool is not (DrawingTool.Pen or DrawingTool.Highlighter or DrawingTool.Fading)) return false;
+        var fading = _model.Tool == DrawingTool.Fading;
+        var attributes = (fading ? TemporarySurface : InkSurface).DefaultDrawingAttributes.Clone();
+        attributes.IgnorePressure = true; // Fingers do not report pen pressure.
+        var stroke = new Stroke(new StylusPointCollection { new StylusPoint(point.X, point.Y) }, attributes);
+        // Stop InkCanvas's single-stylus collector before handling finger sessions ourselves.
+        InkSurface.EditingMode = TemporarySurface.EditingMode = InkCanvasEditingMode.None;
+        _touchStrokes[id] = (stroke, fading); TouchPreview.Strokes.Add(stroke); return true;
+    }
+    internal void MoveTouchStroke(int id, Point point)
+    {
+        if (_touchStrokes.TryGetValue(id, out var pending) && pending.Stroke.StylusPoints.Count < 50_000) pending.Stroke.StylusPoints.Add(new StylusPoint(point.X, point.Y));
+    }
+    internal void CompleteTouchStroke(int id, Point point)
+    {
+        if (!_touchStrokes.Remove(id, out var pending)) return;
+        pending.Stroke.StylusPoints.Add(new StylusPoint(point.X, point.Y));
+        TouchPreview.Strokes.Remove(pending.Stroke);
+        if (pending.Fading)
+        {
+            TemporarySurface.Strokes.Add(pending.Stroke);
+            _temporary.Add(pending.Stroke, TimeSpan.FromSeconds(_model.FadeSeconds)); UpdateHaloTimer();
+        }
+        else InkSurface.Strokes.Add(pending.Stroke);
+        ApplyState();
+    }
+    private void CancelTouchStrokes()
+    {
+        _touchStrokes.Clear(); TouchPreview.Strokes.Clear();
+        var devices = _touchDevices.Values.ToArray(); _touchDevices.Clear();
+        foreach (var device in devices) device.Capture(null);
+        ApplyState();
+    }
+    private void EraseAt(Point point)
+    {
+        var hits = InkSurface.Strokes.Where(stroke => stroke.HitTest(point, Math.Max(8, _model.Thickness * 2))).ToArray();
+        if (hits.Length > 0) InkSurface.Strokes.Remove(new StrokeCollection(hits));
+    }
     private void OnTouchDown(object sender, TouchEventArgs e)
     {
-        if (!_model.TouchEnabled)
-        {
-            e.Handled = true;
-            return;
-        }
-        if (_model.IsDrawing && _model.ShowInk && _model.Tool == DrawingTool.Text)
-        {
-            TextRequested?.Invoke(e.GetTouchPoint(InkSurface).Position, null);
-            e.Handled = true;
-            return;
-        }
-        if (!_model.IsDrawing || !_model.ShowInk || !IsShapeTool) return;
-        if (_shapeStart is null)
-        {
-            _shapeTouch = e.TouchDevice;
-            BeginShape(e.GetTouchPoint(InkSurface).Position);
-            InkSurface.CaptureTouch(e.TouchDevice);
-        }
         e.Handled = true;
+        if (!CanTouch) return;
+        var point = e.GetTouchPoint(InkSurface).Position;
+        if (_model.Tool == DrawingTool.Text) { TextRequested?.Invoke(point, null); return; }
+        if (IsShapeTool)
+        {
+            if (_shapeStart is null)
+            {
+                _shapeTouch = e.TouchDevice; BeginShape(point); InkSurface.CaptureTouch(e.TouchDevice);
+            }
+            return;
+        }
+        if (_model.Tool == DrawingTool.Eraser) EraseAt(point);
+        else if (!BeginTouchStroke(e.TouchDevice.Id, point)) return;
+        _touchDevices[e.TouchDevice.Id] = e.TouchDevice;
+        ((UIElement)sender).CaptureTouch(e.TouchDevice);
     }
-
     private void OnTouchMove(object sender, TouchEventArgs e)
     {
-        if (_shapeTouch != e.TouchDevice || _shapeStart is not { } start) return;
-        ShapePreview.Points = ShapePoints(start, e.GetTouchPoint(InkSurface).Position);
         e.Handled = true;
+        var point = e.GetTouchPoint(InkSurface).Position;
+        if (_shapeTouch == e.TouchDevice && _shapeStart is { } start) ShapePreview.Points = ShapePoints(start, point);
+        else if (_touchDevices.ContainsKey(e.TouchDevice.Id))
+        {
+            if (_model.Tool == DrawingTool.Eraser) EraseAt(point); else MoveTouchStroke(e.TouchDevice.Id, point);
+        }
     }
-
     private void OnTouchEnd(object sender, TouchEventArgs e)
     {
-        if (_shapeTouch != e.TouchDevice) return;
-        CommitShape(e.GetTouchPoint(InkSurface).Position);
         e.Handled = true;
+        var point = e.GetTouchPoint(InkSurface).Position;
+        if (_shapeTouch == e.TouchDevice) { CommitShape(point); return; }
+        CompleteTouchStroke(e.TouchDevice.Id, point);
+        _touchDevices.Remove(e.TouchDevice.Id); e.TouchDevice.Capture(null);
     }
-
     private void OnTouchCaptureLost(object sender, TouchEventArgs e)
     {
         if (_shapeTouch == e.TouchDevice) CancelShape();
+        _touchDevices.Remove(e.TouchDevice.Id);
+        if (_touchStrokes.Remove(e.TouchDevice.Id, out var pending))
+        {
+            TouchPreview.Strokes.Remove(pending.Stroke); ApplyState();
+        }
     }
-
     private void OnStylusDown(object sender, StylusDownEventArgs e)
     {
-        if (!_model.TouchEnabled && e.StylusDevice.TabletDevice.Type == TabletDeviceType.Touch)
-            e.Handled = true;
+        if (e.StylusDevice.TabletDevice.Type == TabletDeviceType.Touch && !CanTouch) e.Handled = true;
     }
+    private void OnPenInRange(object sender, StylusEventArgs e)
+    {
+        if (e.StylusDevice.TabletDevice.Type != TabletDeviceType.Stylus) return;
+        _penDevices.Add(e.StylusDevice.Id);
+        if (_model.PalmRejection) { CancelTouchStrokes(); if (_shapeTouch is not null) CancelShape(); }
+    }
+    private void OnPenOutOfRange(object sender, StylusEventArgs e) => _penDevices.Remove(e.StylusDevice.Id);
 
     private void OnShapeStart(object sender, MouseButtonEventArgs e)
     {
@@ -407,12 +479,16 @@ public partial class OverlayWindow : Window
     }
     private void Reposition()
     {
-        if (_source is not null) NativeMethods.PositionOverlay(_source.Handle, NativeMethods.PrimaryDisplayBounds());
+        if (_source is not null) NativeMethods.PositionOverlay(_source.Handle, NativeMethods.DesktopBounds());
     }
     private nint WndProc(nint hwnd, int message, nint wParam, nint lParam, ref bool handled)
     {
         if (message is NativeMethods.WmDisplayChange or NativeMethods.WmDpiChanged)
-            Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(Reposition));
+            Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() =>
+            {
+                CancelPendingShape(); _penDevices.Clear(); Reposition(); DisplayChanged?.Invoke();
+                _model.Notice = "Display layout changed. Canvas positions are preserved; check alignment before continuing.";
+            }));
         return 0;
     }
 }

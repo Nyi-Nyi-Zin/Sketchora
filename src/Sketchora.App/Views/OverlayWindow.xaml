@@ -9,9 +9,13 @@
         PreviewMouseLeftButtonDown="OnShapeStart" PreviewMouseMove="OnShapeMove"
         PreviewMouseLeftButtonUp="OnShapeEnd" LostMouseCapture="OnCaptureLost"
         PreviewTouchDown="OnTouchDown" PreviewTouchMove="OnTouchMove" PreviewTouchUp="OnTouchEnd"
-        LostTouchCapture="OnTouchCaptureLost" PreviewStylusDown="OnStylusDown" />
+        LostTouchCapture="OnTouchCaptureLost" PreviewStylusDown="OnStylusDown"
+        StylusInRange="OnPenInRange" StylusOutOfRange="OnPenOutOfRange" />
     <InkCanvas x:Name="TemporarySurface" Background="Transparent" Focusable="False"
-        PreviewTouchDown="OnTouchDown" PreviewStylusDown="OnStylusDown" />
+        PreviewTouchDown="OnTouchDown" PreviewTouchMove="OnTouchMove" PreviewTouchUp="OnTouchEnd"
+        LostTouchCapture="OnTouchCaptureLost" PreviewStylusDown="OnStylusDown"
+        StylusInRange="OnPenInRange" StylusOutOfRange="OnPenOutOfRange" />
+    <InkCanvas x:Name="TouchPreview" Background="Transparent" EditingMode="None" IsHitTestVisible="False" Focusable="False" />
     <Canvas x:Name="TextLayer" />
     <Canvas IsHitTestVisible="False">
       <Polyline x:Name="ShapePreview" Visibility="Collapsed" StrokeLineJoin="Round"

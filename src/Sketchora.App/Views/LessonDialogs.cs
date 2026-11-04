@@ -31,33 +31,46 @@ internal static class LessonDialogs
         return window.ShowDialog() == true ? input.Text.Trim() : null;
     }
 
-    public static void Shortcuts(Window owner, char draw, char hide, Func<char, char, string?> apply)
+    public static void Shortcuts(Window owner, IReadOnlyDictionary<string, uint> current, Func<Dictionary<string, uint>, string?> apply)
     {
         var panel = new StackPanel { Margin = new Thickness(20) };
-        panel.Children.Add(new TextBlock { Text = "Choose two different Ctrl + Alt + letter shortcuts.", TextWrapping = TextWrapping.Wrap });
-        ComboBox Selector(char selected)
+        panel.Children.Add(new TextBlock { Text = "All shortcuts use Ctrl + Alt + the selected key.\nDraw, Hide and Ghost must stay enabled; other actions may be Off.", TextWrapping = TextWrapping.Wrap });
+        var list = new StackPanel();
+        var selectors = new Dictionary<string, ComboBox>();
+        var available = new[] { 0u }.Concat(Enumerable.Range(0x41, 26).Select(i => (uint)i))
+            .Concat(Enumerable.Range(0x30, 10).Select(i => (uint)i)).Concat(Enumerable.Range(0x70, 24).Select(i => (uint)i)).ToArray();
+        foreach (var name in ShortcutCatalog.Names)
         {
-            var box = new ComboBox { ItemsSource = Enumerable.Range('A', 26).Select(key => (char)key).ToArray(), SelectedItem = selected, Margin = new Thickness(0, 5, 0, 12) };
-            return box;
+            var row = new Grid { Margin = new Thickness(0, 4, 0, 4) };
+            row.ColumnDefinitions.Add(new ColumnDefinition());
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(100) });
+            var label = new Label { Content = name.Replace("Tool.", "Tool: ") };
+            var box = new ComboBox
+            {
+                ItemsSource = available.Select(key => new KeyValuePair<uint, string>(key, ShortcutCatalog.KeyName(key))).ToArray(),
+                DisplayMemberPath = "Value", SelectedValuePath = "Key", SelectedValue = current[name], MinHeight = 30
+            };
+            System.Windows.Automation.AutomationProperties.SetName(box, name + " shortcut");
+            label.Target = box;
+            Grid.SetColumn(box, 1); row.Children.Add(label); row.Children.Add(box);
+            selectors[name] = box; list.Children.Add(row);
         }
-        panel.Children.Add(new TextBlock { Text = "Draw / interact", Margin = new Thickness(0, 12, 0, 0) });
-        var drawBox = Selector(draw); panel.Children.Add(drawBox);
-        panel.Children.Add(new TextBlock { Text = "Hide / show all (recovery shortcut)" });
-        var hideBox = Selector(hide); panel.Children.Add(hideBox);
+        panel.Children.Add(new ScrollViewer { Content = list, MaxHeight = Math.Max(160, Math.Min(440, SystemParameters.WorkArea.Height - 260)), VerticalScrollBarVisibility = ScrollBarVisibility.Auto });
         var error = new TextBlock { Foreground = Brushes.Firebrick, TextWrapping = TextWrapping.Wrap };
         panel.Children.Add(error);
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
-        var done = Button("Apply"); var cancel = Button("Cancel"); cancel.IsCancel = true;
-        buttons.Children.Add(done); buttons.Children.Add(cancel); panel.Children.Add(buttons);
-        var window = Shell(owner, "Sketchora shortcut settings", panel);
+        var reset = Button("Defaults"); var done = Button("Apply"); var cancel = Button("Cancel"); cancel.IsCancel = true;
+        buttons.Children.Add(reset); buttons.Children.Add(done); buttons.Children.Add(cancel); panel.Children.Add(buttons);
+        var window = Shell(owner, "Sketchora shortcut settings", panel, 520);
+        reset.Click += (_, _) => { foreach (var (name, key) in ShortcutCatalog.Defaults()) selectors[name].SelectedValue = key; };
         done.Click += (_, _) =>
         {
-            var problem = apply((char)drawBox.SelectedItem, (char)hideBox.SelectedItem);
-            if (problem is null) window.DialogResult = true;
-            else error.Text = problem;
+            var problem = apply(selectors.ToDictionary(pair => pair.Key, pair => (uint)(pair.Value.SelectedValue ?? 0u)));
+            if (problem is null) window.DialogResult = true; else error.Text = problem;
         };
         window.ShowDialog();
     }
+
 }
 
 internal sealed class TextEditorWindow : Window
@@ -89,8 +102,16 @@ internal sealed class TextEditorWindow : Window
         _size = new ComboBox { IsEditable = true, ItemsSource = new[] { 16, 20, 24, 32, 40, 48, 64 }, Text = label.FontSize.ToString("0"), Width = 85, Margin = new Thickness(8, 0, 20, 0) };
         options.Children.Add(_size);
         options.Children.Add(new TextBlock { Text = "Color", VerticalAlignment = VerticalAlignment.Center });
-        _color = new ComboBox { ItemsSource = new[] { label.Color, "#6366F1", "#EF4444", "#F59E0B", "#10B981", "#38BDF8", "#FFFFFF", "#171B29" }.Distinct().ToArray(), SelectedItem = label.Color, Width = 120, Margin = new Thickness(8, 0, 0, 0) };
+        _color = new ComboBox { ItemsSource = new[] { label.Color }.Concat(Sketchora.App.ViewModels.ToolbarViewModel.Palette).Distinct().ToArray(), SelectedItem = label.Color, Width = 120, Margin = new Thickness(8, 0, 0, 0) };
         options.Children.Add(_color); panel.Children.Add(options);
+        var custom = new Button { Content = "Custom colour…", HorizontalAlignment = HorizontalAlignment.Left, Padding = new Thickness(8) };
+        custom.Click += (_, _) =>
+        {
+            if (Sketchora.App.Services.ColorPicker.Choose(this, LabelColor) is not { } color) return;
+            _color.ItemsSource = new[] { color }.Concat(Sketchora.App.ViewModels.ToolbarViewModel.Palette).Distinct().ToArray();
+            _color.SelectedItem = color;
+        };
+        panel.Children.Add(custom);
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
         Button Make(string text) { var button = new Button { Content = text, MinWidth = 85, Margin = new Thickness(4), Padding = new Thickness(10, 8, 10, 8) }; buttons.Children.Add(button); return button; }
         if (existing) Make("Delete").Click += (_, _) => { DeleteRequested = true; DialogResult = true; };
