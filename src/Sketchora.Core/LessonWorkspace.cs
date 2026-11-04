@@ -19,6 +19,9 @@ public sealed class LessonWorkspace
     public int ActivePageIndex => _document.ActivePageIndex;
     public bool CanUndo => History.CanUndo;
     public bool CanRedo => History.CanRedo;
+    public int ImportCapacity => IsOnlyBlankBoard ? LessonStore.MaximumPages : LessonStore.MaximumPages - PageCount;
+    private bool IsOnlyBlankBoard => PageCount == 1 && _document.Pages[0] is { Ink.Length: 0, Texts.Count: 0, ImagePng.Length: 0, Pattern: PagePattern.None }
+        && (!_history.TryGetValue(_document.Pages[0].Id, out var history) || (!history.CanUndo && !history.CanRedo));
     public bool CanRestorePage => _deleted.Count > 0 && PageCount < LessonStore.MaximumPages;
     private LessonPage Active => IsDesktop ? _document.Desktop : _document.Pages[ActivePageIndex];
     private SnapshotHistory<LessonPage> History
@@ -62,6 +65,29 @@ public sealed class LessonWorkspace
 
     public void SetContent(string ink, IEnumerable<TextLabel> labels) => Edit(Active with { Ink = ink, Texts = labels.ToList() });
     public void SetBackground(PageBackground background) { if (!IsDesktop && Active.Background != background) Edit(Active with { Background = background }); }
+    public void SetPattern(PagePattern pattern)
+    {
+        if (!IsDesktop && Active.Pattern != pattern) Edit(Active with { Pattern = pattern });
+    }
+    public void RemovePageImage() { if (!IsDesktop && Active.ImagePng.Length > 0) Edit(Active with { ImagePng = "", ImagePlacement = null }); }
+    public void ImportPages(IReadOnlyList<LessonPage> incoming)
+    {
+        if (incoming.Count == 0 || incoming.Count > ImportCapacity) throw new InvalidDataException("Choose fewer pages to stay within the 100-board limit.");
+        var added = incoming.Select(page => page.Copy() with { Id = Guid.NewGuid(), Texts = page.Texts.Select(text => text with { Id = Guid.NewGuid() }).ToList() }).ToList();
+        for (var i = 0; i < added.Count; i++)
+            if (added[i].ImagePng.Length > 0 && added[i].ImagePlacement is null)
+            {
+                var size = EmbeddedPng.Dimensions(added[i].ImagePng);
+                added[i] = added[i] with { ImagePlacement = PageImageRect.Fit(size.Width, size.Height, _document.CanvasWidth, _document.CanvasHeight) };
+            }
+        var replaceBlank = IsOnlyBlankBoard;
+        var pages = replaceBlank ? added : _document.Pages.Select(page => page.Copy()).Concat(added).ToList();
+        var next = _document with { SchemaVersion = 2, Pages = pages, ActivePageIndex = replaceBlank ? 0 : PageCount, IsDesktop = false };
+        LessonStore.ValidateStorageSize(next); // Import is atomic: failures leave authored work and history intact.
+        _document = next;
+        if (replaceBlank) _history.Clear();
+        Revision++; Notify();
+    }
     public void RenamePage(string name)
     {
         if (IsDesktop) return;
@@ -128,6 +154,7 @@ public sealed class LessonWorkspace
             Desktop = IsDesktop ? next.Copy() : new LessonPage { Name = "Desktop" },
             Pages = IsDesktop ? [new LessonPage()] : [next.Copy()]
         });
+        if (next.Pattern != PagePattern.None || next.ImagePng.Length > 0) _document = _document with { SchemaVersion = 2 };
         History.Capture(next);
         ReplaceActive(next.Copy());
         Revision++;

@@ -78,3 +78,11 @@ See WINDOWS-CHECKLIST.md for the manual release gate. A successful cross-build d
 - Self-contained Windows x64 publish succeeded. Artifact `Sketchora-win-x64`: **71,420,950 bytes**, ID `13312676497`.
 - [Download the current preview](https://github.com/Nyi-Nyi-Zin/Sketchora/actions/runs/41811137768/artifacts/13312676497).
 - Actual device input, mixed-DPI/hot-plug behavior, IME and receiver-side meeting capture retain their manual checklist requirements.
+
+
+## Teaching update local verification — v0.4.0-preview.1
+
+- Full solution Release cross-build with .NET SDK 10.0.403: **0 warnings / 0 errors**.
+- Core suite: **61 passed**, no failures or skips. New coverage checks old shortcut-map migration, transactional imports, preservation of cleared-board history, image/pattern undo and persistence, bounded image validation and valid/atomic PDF writing.
+- Windows adapter coverage added for selection edits, point erasing, ephemeral freeze, coordinate-preserving zoom/pan, worksheet fitting, real Windows PDF decoding/import, detached image import, malformed images, patterned rendering and spotlight exclusion. Native execution is recorded after Windows CI completes.
+- The app and WPF tests target Windows SDK 10.0.19041 for the built-in Windows PDF renderer. No PDF service/backend is used.

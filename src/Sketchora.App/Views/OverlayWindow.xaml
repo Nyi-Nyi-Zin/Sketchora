@@ -4,22 +4,29 @@
     Title="Sketchora annotation layer" WindowStyle="None" ResizeMode="NoResize"
     AllowsTransparency="True" Background="Transparent" Topmost="True"
     ShowInTaskbar="False" ShowActivated="False" Focusable="False">
-  <Grid x:Name="SurfaceRoot" ClipToBounds="True">
+  <Grid x:Name="SurfaceRoot" ClipToBounds="True" PreviewMouseWheel="OnViewWheel">
+    <Grid x:Name="CanvasContent">
+    <Rectangle x:Name="PageBackgroundLayer" IsHitTestVisible="False"/>
+    <Canvas IsHitTestVisible="False"><Image x:Name="PageImage" Stretch="Fill"/></Canvas>
     <InkCanvas x:Name="InkSurface" Background="#01000000" Focusable="False"
         PreviewMouseLeftButtonDown="OnShapeStart" PreviewMouseMove="OnShapeMove"
         PreviewMouseLeftButtonUp="OnShapeEnd" LostMouseCapture="OnCaptureLost"
         PreviewTouchDown="OnTouchDown" PreviewTouchMove="OnTouchMove" PreviewTouchUp="OnTouchEnd"
         LostTouchCapture="OnTouchCaptureLost" PreviewStylusDown="OnStylusDown"
-        StylusInRange="OnPenInRange" StylusOutOfRange="OnPenOutOfRange" />
+        StylusInRange="OnPenInRange" StylusOutOfRange="OnPenOutOfRange" PreviewStylusUp="OnPanStylusUp" />
     <InkCanvas x:Name="TemporarySurface" Background="Transparent" Focusable="False"
         PreviewTouchDown="OnTouchDown" PreviewTouchMove="OnTouchMove" PreviewTouchUp="OnTouchEnd"
         LostTouchCapture="OnTouchCaptureLost" PreviewStylusDown="OnStylusDown"
-        StylusInRange="OnPenInRange" StylusOutOfRange="OnPenOutOfRange" />
+        StylusInRange="OnPenInRange" StylusOutOfRange="OnPenOutOfRange" PreviewStylusUp="OnPanStylusUp" />
     <InkCanvas x:Name="TouchPreview" Background="Transparent" EditingMode="None" IsHitTestVisible="False" Focusable="False" />
     <Canvas x:Name="TextLayer" />
     <Canvas IsHitTestVisible="False">
       <Polyline x:Name="ShapePreview" Visibility="Collapsed" StrokeLineJoin="Round"
           StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+    </Canvas>
+    </Grid>
+    <Path x:Name="SpotlightMask" Fill="#B3000000" IsHitTestVisible="False" Visibility="Collapsed"/>
+    <Canvas IsHitTestVisible="False">
       <Ellipse x:Name="PointerHalo" Width="38" Height="38" Visibility="Collapsed"
           Fill="#40FBBF24" Stroke="#E6FBBF24" StrokeThickness="2" />
     </Canvas>

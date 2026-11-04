@@ -109,7 +109,9 @@
       <Setter Property="Margin" Value="3,14,0,6"/>
     </Style>
     <Style x:Key="SlimScrollBar" TargetType="ScrollBar">
-      <Setter Property="Width" Value="4"/><Setter Property="MinWidth" Value="4"/><Setter Property="MaxWidth" Value="4"/>
+      <Setter Property="Width" Value="4"/>
+      <Setter Property="MinWidth" Value="4"/>
+      <Setter Property="MaxWidth" Value="4"/>
       <Setter Property="Background" Value="Transparent"/>
       <Setter Property="Template">
         <Setter.Value>
@@ -266,6 +268,63 @@
                   <icons:GlyphIcon Kind="Fading" Width="20" Height="20"/>
                   <TextBlock Text="Fading ink" Margin="7,0,0,0" VerticalAlignment="Center"/>
                 </StackPanel>
+              </Button>
+              <Button x:Name="SelectChoice" Tag="Tool.Select" Command="{Binding SelectToolCommand}" AutomationProperties.Name="Select / resize" CommandParameter="{x:Static vm:DrawingTool.Select}" Click="OnToolChosen">
+                <Button.ToolTip>
+                  <MultiBinding Converter="{StaticResource ShortcutTip}" ConverterParameter="Tool.Select|Select / resize">
+                    <Binding/>
+                    <Binding Path="ShortcutRevision"/>
+                  </MultiBinding>
+                </Button.ToolTip>
+                <StackPanel Orientation="Horizontal">
+                  <icons:GlyphIcon Kind="Select" Width="18" Height="18"/>
+                  <TextBlock Text="Select / resize" FontSize="11" Margin="5,0,0,0" VerticalAlignment="Center"/>
+                </StackPanel>
+              </Button>
+              <Button x:Name="PartialEraserChoice" Tag="Tool.PartialEraser" Command="{Binding SelectToolCommand}" AutomationProperties.Name="Partial eraser" CommandParameter="{x:Static vm:DrawingTool.PartialEraser}" Click="OnToolChosen">
+                <Button.ToolTip>
+                  <MultiBinding Converter="{StaticResource ShortcutTip}" ConverterParameter="Tool.PartialEraser|Partial eraser">
+                    <Binding/>
+                    <Binding Path="ShortcutRevision"/>
+                  </MultiBinding>
+                </Button.ToolTip>
+                <StackPanel Orientation="Horizontal">
+                  <icons:GlyphIcon Kind="PartialEraser" Width="18" Height="18"/>
+                  <TextBlock Text="Partial eraser" FontSize="11" Margin="5,0,0,0" VerticalAlignment="Center"/>
+                </StackPanel>
+              </Button>
+              <Button x:Name="PanChoice" Tag="Tool.Pan" Command="{Binding SelectToolCommand}" AutomationProperties.Name="Pan canvas" CommandParameter="{x:Static vm:DrawingTool.Pan}" Click="OnToolChosen">
+                <Button.ToolTip>
+                  <MultiBinding Converter="{StaticResource ShortcutTip}" ConverterParameter="Tool.Pan|Pan canvas">
+                    <Binding/>
+                    <Binding Path="ShortcutRevision"/>
+                  </MultiBinding>
+                </Button.ToolTip>
+                <StackPanel Orientation="Horizontal">
+                  <icons:GlyphIcon Kind="Pan" Width="18" Height="18"/>
+                  <TextBlock Text="Pan canvas" FontSize="11" Margin="5,0,0,0" VerticalAlignment="Center"/>
+                </StackPanel>
+              </Button>
+            </UniformGrid>
+            <Separator/>
+            <UniformGrid Columns="2">
+              <Button x:Name="DuplicateSelectionButton" Tag="DuplicateSelection" Command="{Binding DuplicateSelectionCommand}" AutomationProperties.Name="Copy selected">
+                <Button.ToolTip>
+                  <MultiBinding Converter="{StaticResource ShortcutTip}" ConverterParameter="DuplicateSelection|Copy selected">
+                    <Binding/>
+                    <Binding Path="ShortcutRevision"/>
+                  </MultiBinding>
+                </Button.ToolTip>
+                <TextBlock Text="Copy selected"/>
+              </Button>
+              <Button x:Name="DeleteSelectionButton" Tag="DeleteSelection" Command="{Binding DeleteSelectionCommand}" AutomationProperties.Name="Delete selected">
+                <Button.ToolTip>
+                  <MultiBinding Converter="{StaticResource ShortcutTip}" ConverterParameter="DeleteSelection|Delete selected">
+                    <Binding/>
+                    <Binding Path="ShortcutRevision"/>
+                  </MultiBinding>
+                </Button.ToolTip>
+                <TextBlock Text="Delete selected"/>
               </Button>
             </UniformGrid>
           </StackPanel>
@@ -508,6 +567,24 @@
                 </Button.ToolTip>
                 <TextBlock Text="Save as"/>
               </Button>
+              <Button x:Name="ImportWorksheetButton" Tag="Import" Command="{Binding ImportCommand}" AutomationProperties.Name="Import image/PDF">
+                <Button.ToolTip>
+                  <MultiBinding Converter="{StaticResource ShortcutTip}" ConverterParameter="Import|Import image/PDF">
+                    <Binding/>
+                    <Binding Path="ShortcutRevision"/>
+                  </MultiBinding>
+                </Button.ToolTip>
+                <TextBlock Text="Import image/PDF"/>
+              </Button>
+              <Button x:Name="ExportPdfButton" Tag="ExportPdf" Command="{Binding ExportPdfCommand}" AutomationProperties.Name="Export PDF">
+                <Button.ToolTip>
+                  <MultiBinding Converter="{StaticResource ShortcutTip}" ConverterParameter="ExportPdf|Export PDF">
+                    <Binding/>
+                    <Binding Path="ShortcutRevision"/>
+                  </MultiBinding>
+                </Button.ToolTip>
+                <TextBlock Text="Export PDF"/>
+              </Button>
             </UniformGrid>
             <TextBlock Text="BOARD PAGES" Style="{StaticResource Section}"/>
             <TextBlock Text="{Binding PageLabel}" Foreground="#B4C5DB" TextWrapping="Wrap" Margin="3,2,3,6"/>
@@ -594,6 +671,98 @@
               </Button.ToolTip>
               <TextBlock Text="White / black page"/>
             </Button>
+            <TextBlock Text="BOARD BACKGROUND" Style="{StaticResource Section}"/>
+            <UniformGrid Columns="3">
+              <Button x:Name="PatternNoneButton" Tag="PatternNone" Command="{Binding PatternNoneCommand}" AutomationProperties.Name="Plain">
+                <Button.ToolTip>
+                  <MultiBinding Converter="{StaticResource ShortcutTip}" ConverterParameter="PatternNone|Plain">
+                    <Binding/>
+                    <Binding Path="ShortcutRevision"/>
+                  </MultiBinding>
+                </Button.ToolTip>
+                <TextBlock Text="Plain"/>
+              </Button>
+              <Button x:Name="PatternGridButton" Tag="PatternGrid" Command="{Binding PatternGridCommand}" AutomationProperties.Name="Grid">
+                <Button.ToolTip>
+                  <MultiBinding Converter="{StaticResource ShortcutTip}" ConverterParameter="PatternGrid|Grid">
+                    <Binding/>
+                    <Binding Path="ShortcutRevision"/>
+                  </MultiBinding>
+                </Button.ToolTip>
+                <TextBlock Text="Grid"/>
+              </Button>
+              <Button x:Name="PatternRuledButton" Tag="PatternRuled" Command="{Binding PatternRuledCommand}" AutomationProperties.Name="Ruled">
+                <Button.ToolTip>
+                  <MultiBinding Converter="{StaticResource ShortcutTip}" ConverterParameter="PatternRuled|Ruled">
+                    <Binding/>
+                    <Binding Path="ShortcutRevision"/>
+                  </MultiBinding>
+                </Button.ToolTip>
+                <TextBlock Text="Ruled"/>
+              </Button>
+            </UniformGrid>
+            <Button x:Name="RemoveImageButton" Tag="RemoveImage" Command="{Binding RemoveImageCommand}" AutomationProperties.Name="Remove worksheet image">
+              <Button.ToolTip>
+                <MultiBinding Converter="{StaticResource ShortcutTip}" ConverterParameter="RemoveImage|Remove worksheet image">
+                  <Binding/>
+                  <Binding Path="ShortcutRevision"/>
+                </MultiBinding>
+              </Button.ToolTip>
+              <TextBlock Text="Remove worksheet image"/>
+            </Button>
+            <TextBlock Text="VIEW &amp; FOCUS" Style="{StaticResource Section}"/>
+            <Button x:Name="FreezeButton" Tag="Freeze" Command="{Binding FreezeCommand}" AutomationProperties.Name="Freeze / unfreeze screen">
+              <Button.ToolTip>
+                <MultiBinding Converter="{StaticResource ShortcutTip}" ConverterParameter="Freeze|Freeze / unfreeze screen">
+                  <Binding/>
+                  <Binding Path="ShortcutRevision"/>
+                </MultiBinding>
+              </Button.ToolTip>
+              <StackPanel Orientation="Horizontal">
+                <icons:GlyphIcon Kind="Freeze" Width="20" Height="20"/>
+                <TextBlock Text="{Binding FreezeLabel}" Margin="8,0,0,0" VerticalAlignment="Center"/>
+              </StackPanel>
+            </Button>
+            <TextBlock Text="Zoom/pan: board or frozen screen" Foreground="#8195AF" FontSize="11" Margin="3,4"/>
+            <UniformGrid Columns="3">
+              <Button x:Name="ZoomOutButton" Tag="ZoomOut" Command="{Binding ZoomOutCommand}" AutomationProperties.Name="−">
+                <Button.ToolTip>
+                  <MultiBinding Converter="{StaticResource ShortcutTip}" ConverterParameter="ZoomOut|−">
+                    <Binding/>
+                    <Binding Path="ShortcutRevision"/>
+                  </MultiBinding>
+                </Button.ToolTip>
+                <TextBlock Text="−"/>
+              </Button>
+              <Button x:Name="ResetViewButton" Tag="ResetView" Command="{Binding ResetViewCommand}" AutomationProperties.Name="Reset view">
+                <Button.ToolTip>
+                  <MultiBinding Converter="{StaticResource ShortcutTip}" ConverterParameter="ResetView|Reset view">
+                    <Binding/>
+                    <Binding Path="ShortcutRevision"/>
+                  </MultiBinding>
+                </Button.ToolTip>
+                <TextBlock Text="Reset view"/>
+              </Button>
+              <Button x:Name="ZoomInButton" Tag="ZoomIn" Command="{Binding ZoomInCommand}" AutomationProperties.Name="+">
+                <Button.ToolTip>
+                  <MultiBinding Converter="{StaticResource ShortcutTip}" ConverterParameter="ZoomIn|+">
+                    <Binding/>
+                    <Binding Path="ShortcutRevision"/>
+                  </MultiBinding>
+                </Button.ToolTip>
+                <TextBlock Text="+"/>
+              </Button>
+            </UniformGrid>
+            <TextBlock Text="{Binding ZoomLabel}" Foreground="#B4C5DB" HorizontalAlignment="Center"/>
+            <CheckBox x:Name="SpotlightCheck" Content="Spotlight" IsChecked="{Binding SpotlightEnabled}">
+              <CheckBox.ToolTip>
+                <MultiBinding Converter="{StaticResource ShortcutTip}" ConverterParameter="ToggleSpotlight|Spotlight">
+                  <Binding/>
+                  <Binding Path="ShortcutRevision"/>
+                </MultiBinding>
+              </CheckBox.ToolTip>
+            </CheckBox>
+            <Slider Minimum="30" Maximum="400" Value="{Binding SpotlightRadius}" Margin="4,3,4,10" AutomationProperties.Name="Spotlight radius" ToolTip="Spotlight radius"/>
             <TextBlock Text="INPUT &amp; POINTER" Style="{StaticResource Section}"/>
             <CheckBox Content="Pointer halo" IsChecked="{Binding HaloEnabled}">
               <CheckBox.ToolTip>

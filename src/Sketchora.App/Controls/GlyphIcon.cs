@@ -13,6 +13,11 @@ public sealed class GlyphIcon : Control
     public string Kind { get => (string)GetValue(KindProperty); set => SetValue(KindProperty, value); }
     private static readonly IReadOnlyDictionary<string, Geometry> Shapes = new Dictionary<string, string>
     {
+        ["Select"] = "M4,9 L4,4 9,4 M15,4 L20,4 20,9 M20,15 L20,20 15,20 M9,20 L4,20 4,15 M9,12 L15,12 M12,9 L12,15",
+        ["PartialEraser"] = "M3,14 L12,4 21,12 13,21 9,21 Z M8,9 L17,18 M16,3 L22,3 M20,1 L20,5",
+        ["Pan"] = "M8,12 L8,4 Q10,2 11,4 L11,10 M11,9 L11,2 Q13,0 14,2 L14,10 M14,9 L14,4 Q16,2 17,4 L17,11 M17,10 Q21,7 21,12 L20,18 17,22 10,22 4,15 Q3,12 5,12 L8,15 Z",
+        ["Freeze"] = "M12,2 L12,22 M3,7 L21,17 M3,17 L21,7 M8,3 L12,7 16,3 M8,21 L12,17 16,21",
+        ["Spotlight"] = "M20,11 A8,8 0 1 1 4,11 A8,8 0 1 1 20,11 Z M8,20 L6,23 M16,20 L18,23",
         ["Pen"] = "M4,20 L5,15 16,4 Q18,2 20,4 Q22,6 20,8 L9,19 Z M14,6 L18,10 M5,15 L9,19",
         ["Highlighter"] = "M4,16 L12,8 18,14 10,22 Z M11,9 L16,4 22,10 17,15 M3,21 L9,21",
         ["Eraser"] = "M3,14 L12,4 Q13,3 14,4 L21,11 Q22,12 21,13 L13,21 9,21 Z M7,10 L17,18 M13,21 L22,21",

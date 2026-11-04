@@ -34,6 +34,7 @@ internal sealed class AppController : IDisposable
     private Task _recoveryTask = Task.CompletedTask;
     private long _lastRevision, _lastRecoveryRevision = -1;
     private long _lastEdit = Stopwatch.GetTimestamp(), _lastRecovery = Stopwatch.GetTimestamp();
+    private bool? _resumeDrawing;
     private bool _ghost, _hidden, _quitting, _busy, _savingRecovery, _recoveryFailed, _disposed;
 
     public AppController()
@@ -112,7 +113,7 @@ internal sealed class AppController : IDisposable
         if (name.StartsWith("Tool.", StringComparison.Ordinal) && Enum.TryParse<DrawingTool>(name[5..], out var tool))
         {
             if (_hidden) ShowAll();
-            _model.SelectToolCommand.Execute(tool); return;
+            if (_model.SelectToolCommand.CanExecute(tool)) _model.SelectToolCommand.Execute(tool); return;
         }
         switch (name)
         {
@@ -167,6 +168,19 @@ internal sealed class AppController : IDisposable
         {
             switch (action)
             {
+                case CanvasAction.DuplicateSelection: _overlay.DuplicateSelection(); break;
+                case CanvasAction.DeleteSelection: _overlay.DeleteSelection(); break;
+                case CanvasAction.Freeze: _ = RunAsync(FreezeAsync); break;
+                case CanvasAction.ExportPdf: _ = RunAsync(ExportPdfAsync); break;
+                case CanvasAction.Import: _ = RunAsync(ImportAsync); break;
+                case CanvasAction.ZoomIn: _overlay.ChangeZoom(1.25); break;
+                case CanvasAction.ZoomOut: _overlay.ChangeZoom(.8); break;
+                case CanvasAction.ResetView: _overlay.ResetView(); break;
+                case CanvasAction.ToggleSpotlight: _model.SpotlightEnabled = !_model.SpotlightEnabled; break;
+                case CanvasAction.PatternNone: _workspace.SetPattern(PagePattern.None); break;
+                case CanvasAction.PatternGrid: _workspace.SetPattern(PagePattern.Grid); break;
+                case CanvasAction.PatternRuled: _workspace.SetPattern(PagePattern.Ruled); break;
+                case CanvasAction.RemoveImage: _workspace.RemovePageImage(); break;
                 case CanvasAction.Undo: _workspace.Undo(); break;
                 case CanvasAction.Redo: _workspace.Redo(); break;
                 case CanvasAction.Clear: _workspace.Clear(); break;
@@ -203,7 +217,7 @@ internal sealed class AppController : IDisposable
     private async Task RunAsync(Func<Task> action)
     {
         if (_busy || _disposed) return;
-        _busy = true;
+        _busy = true; _resumeDrawing = null;
         var wasDrawing = _model.IsDrawing;
         _model.IsBusy = true;
         if (_ghost && !_hidden) _toolbar.Show();
@@ -216,13 +230,13 @@ internal sealed class AppController : IDisposable
             if (!_quitting && !_disposed)
             {
                 _model.IsBusy = false;
-                if (!_hidden) _model.IsDrawing = wasDrawing;
+                if (!_hidden) _model.IsDrawing = _resumeDrawing ?? wasDrawing;
                 if (_ghost) _toolbar.Hide();
             }
         }
     }
     private static bool IsExpected(Exception ex) => ex is IOException or UnauthorizedAccessException or JsonException
-        or ArgumentException or InvalidOperationException or Win32Exception or System.Runtime.InteropServices.ExternalException;
+        or ArgumentException or FormatException or NotSupportedException or InvalidOperationException or Win32Exception or System.Runtime.InteropServices.ExternalException;
     private void ReportError(Exception ex)
     {
         if (_quitting || _disposed) return;
@@ -232,6 +246,7 @@ internal sealed class AppController : IDisposable
     public void EmergencyHide()
     {
         _hidden = true; _ghost = false;
+        _overlay.SetFrozenFrame(null); _model.SpotlightEnabled = false;
         _model.IsDrawing = false;
         if (_textEditor is { IsVisible: true }) _textEditor.DialogResult = false;
         if (_capturePicker is { IsVisible: true }) _capturePicker.DialogResult = false;
@@ -268,6 +283,7 @@ internal sealed class AppController : IDisposable
     private async Task NewAsync()
     {
         if (!await ConfirmReplaceAsync()) return;
+        _overlay.SetFrozenFrame(null);
         _workspace.New(_overlay.CanvasSize.Width, _overlay.CanvasSize.Height);
         ClearRecovery(); _lastRecoveryRevision = -1;
         _model.Notice = "New lesson. Board pages and desktop ink are separate.";
@@ -281,6 +297,7 @@ internal sealed class AppController : IDisposable
         InkSerializer.Validate(loaded);
         loaded = ChooseCanvasSize(loaded);
         if (!await ConfirmReplaceAsync()) return;
+        _overlay.SetFrozenFrame(null);
         _workspace.Load(loaded, dialog.FileName);
         ClearRecovery(); _lastRecoveryRevision = -1;
         _model.Notice = "Lesson opened. Desktop ink remains fixed to screen coordinates.";
@@ -351,6 +368,56 @@ internal sealed class AppController : IDisposable
     {
         if (ColorPicker.Choose(_toolbar, _model.Color) is { } color) _model.Color = color;
         return Task.CompletedTask;
+    }
+    private async Task FreezeAsync()
+    {
+        if (!_workspace.IsDesktop && !_model.FrozenScreen)
+        { _model.Notice = "Boards already support zoom/pan. Switch to desktop to freeze an application."; return; }
+        if (_model.FrozenScreen)
+        {
+            _overlay.SetFrozenFrame(null); _model.Notice = "Screen unfrozen. Authored ink is unchanged."; return;
+        }
+        _overlay.Hide(); _toolbar.Hide();
+        try
+        {
+            await Task.Delay(160);
+            if (_hidden) return;
+            NativeMethods.DwmFlush();
+            using var desktop = ScreenCapture.CaptureDesktop();
+            var frame = ScreenCapture.ToBitmapSource(desktop);
+            _workspace.ShowDesktop(true); _overlay.SetFrozenFrame(frame);
+            _model.ShowInk = true; _resumeDrawing = true;
+            _model.Notice = "Screen frozen. Draw, zoom or pan; Use desktop or Unfreeze releases it. Frozen pixels are session-only.";
+        }
+        finally { if (!_hidden) { _overlay.Show(); if (!_ghost) _toolbar.Show(); } }
+    }
+    private async Task ImportAsync()
+    {
+        var dialog = new OpenFileDialog { Title = "Import worksheet as board pages", Filter = "Image or PDF|*.png;*.jpg;*.jpeg;*.bmp;*.pdf|Images|*.png;*.jpg;*.jpeg;*.bmp|PDF|*.pdf" };
+        if (dialog.ShowDialog(_toolbar) != true) return;
+        IReadOnlyList<LessonPage> pages;
+        if (string.Equals(Path.GetExtension(dialog.FileName), ".pdf", StringComparison.OrdinalIgnoreCase))
+            pages = await PdfImport.ReadAsync(dialog.FileName, total => LessonDialogs.PdfRange(_toolbar, total, _workspace.ImportCapacity), () => _hidden);
+        else pages = new[] { LessonRenderer.ImportImage(dialog.FileName) };
+        if (_hidden) return;
+        _workspace.ImportPages(pages); _resumeDrawing = true;
+        _model.Notice = $"Imported {pages.Count} board page(s). Save lesson to preserve worksheets and annotations.";
+    }
+    private async Task ExportPdfAsync()
+    {
+        var dialog = new SaveFileDialog { Title = "Export all board pages to PDF", Filter = "PDF document (*.pdf)|*.pdf", DefaultExt = ".pdf", AddExtension = true, FileName = "Sketchora-lesson.pdf" };
+        if (dialog.ShowDialog(_toolbar) != true) return;
+        var snapshot = _workspace.Snapshot; var pages = new List<PdfRasterPage>();
+        for (var i = 0; i < snapshot.Pages.Count; i++)
+        {
+            if (_hidden) throw new OperationCanceledException();
+            _model.Notice = $"Exporting board {i + 1} / {snapshot.Pages.Count}…";
+            pages.Add(LessonRenderer.RenderPage(snapshot.Pages[i], snapshot.CanvasWidth, snapshot.CanvasHeight));
+            await Dispatcher.Yield(DispatcherPriority.Background);
+        }
+        if (_hidden) throw new OperationCanceledException();
+        await Task.Run(() => RasterPdf.Save(dialog.FileName, pages));
+        _model.Notice = $"Exported {pages.Count} board page(s). PDF pages are flattened images; the editable lesson stays separate.";
     }
     private async Task CaptureAsync(bool clipboard, bool region)
     {
@@ -452,7 +519,7 @@ internal sealed class AppController : IDisposable
             Color = _model.Color, Thickness = _model.Thickness, PointerHalo = _model.HaloEnabled, TouchDrawing = _model.TouchEnabled,
             ToolbarLeft = _toolbar.Left, ToolbarTop = _toolbar.Top, ExpandedToolbar = false,
             FadeSeconds = _model.FadeSeconds, TextSize = _model.TextSize,
-            ToolWidths = _model.ToolWidths, PressureEnabled = _model.PressureEnabled, PalmRejection = _model.PalmRejection
+            ToolWidths = _model.ToolWidths, PressureEnabled = _model.PressureEnabled, PalmRejection = _model.PalmRejection, SpotlightRadius = _model.SpotlightRadius
         };
         try { _store.Save(_preferences); return true; }
         catch (Exception ex) when (IsExpected(ex)) { _model.Notice = "Could not save preferences. " + ex.Message; return false; }

@@ -2,8 +2,8 @@ namespace Sketchora.Core;
 
 public static class ShortcutCatalog
 {
-    public static readonly string[] Tools = ["Pen", "Highlighter", "Eraser", "Line", "Arrow", "Rectangle", "Ellipse", "Text", "Fading"];
-    public static readonly string[] Actions = ["Draw", "Hide", "Ghost", "Undo", "Redo", "Clear", "Export", "CopyScreenshot", "RegionScreenshot", "Exit", "NewLesson", "OpenLesson", "SaveLesson", "SaveLessonAs", "CycleBoard", "ToggleBackground", "PreviousPage", "NextPage", "AddPage", "DuplicatePage", "RenamePage", "DeletePage", "RestorePage", "ClearTemporary", "Settings", "CustomColor", "ToggleInk", "ToggleHalo", "ToggleTouch", "TogglePressure", "TogglePalm", "Collapse", "WidthUp", "WidthDown", "NextColor"];
+    public static readonly string[] Tools = ["Pen", "Highlighter", "Eraser", "Line", "Arrow", "Rectangle", "Ellipse", "Text", "Fading", "Select", "PartialEraser", "Pan"];
+    public static readonly string[] Actions = ["Draw", "Hide", "Ghost", "Undo", "Redo", "Clear", "Export", "CopyScreenshot", "RegionScreenshot", "Exit", "NewLesson", "OpenLesson", "SaveLesson", "SaveLessonAs", "CycleBoard", "ToggleBackground", "PreviousPage", "NextPage", "AddPage", "DuplicatePage", "RenamePage", "DeletePage", "RestorePage", "ClearTemporary", "Settings", "CustomColor", "ToggleInk", "ToggleHalo", "ToggleTouch", "TogglePressure", "TogglePalm", "Collapse", "WidthUp", "WidthDown", "NextColor", "DuplicateSelection", "DeleteSelection", "Freeze", "ExportPdf", "Import", "ZoomIn", "ZoomOut", "ResetView", "ToggleSpotlight", "PatternNone", "PatternGrid", "PatternRuled", "RemoveImage"];
     public static IEnumerable<string> Names => Tools.Select(tool => "Tool." + tool).Concat(Actions);
     public static Dictionary<string, uint> Defaults(char draw = 'D', char hide = 'H')
     {
@@ -14,12 +14,18 @@ public static class ShortcutCatalog
         {
             ["Ghost"] = 'G', ["Tool.Pen"] = 'P', ["Tool.Highlighter"] = 'M', ["Tool.Eraser"] = 'E',
             ["Tool.Line"] = 'L', ["Tool.Arrow"] = 'A', ["Tool.Rectangle"] = 'R', ["Tool.Ellipse"] = 'O',
-            ["Tool.Text"] = 'T', ["Tool.Fading"] = 'F', ["Undo"] = 'Z', ["Redo"] = 'Y', ["Clear"] = 'C',
+            ["Tool.Text"] = 'T', ["Tool.Fading"] = 'F', ["Tool.Select"] = 'V', ["Tool.PartialEraser"] = 'Q', ["Tool.Pan"] = 'U', ["Undo"] = 'Z', ["Redo"] = 'Y', ["Clear"] = 'C',
             ["Export"] = 'S', ["CopyScreenshot"] = 'B', ["RegionScreenshot"] = 'X', ["CycleBoard"] = 'W'
         };
         foreach (var (name, key) in defaults)
             keys[name] = keys.Values.Contains(key) ? Enumerable.Range(0x70, 24).Select(i => (uint)i).First(k => !keys.Values.Contains(k)) : key;
         return keys;
+    }
+    public static Dictionary<string, uint>? Upgrade(IReadOnlyDictionary<string, uint>? keys)
+    {
+        if (keys is null || keys.Keys.Any(name => !Names.Contains(name))) return null;
+        var result = Names.ToDictionary(name => name, name => keys.GetValueOrDefault(name));
+        return IsValid(result) ? result : null;
     }
     public static bool IsKey(uint key) => key == 0 || key is >= 0x30 and <= 0x39 or >= 0x41 and <= 0x5A or >= 0x70 and <= 0x87;
     public static bool IsValid(IReadOnlyDictionary<string, uint>? keys) => keys is not null

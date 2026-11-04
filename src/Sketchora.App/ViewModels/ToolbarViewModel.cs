@@ -4,12 +4,14 @@ using Sketchora.Core;
 
 namespace Sketchora.App.ViewModels;
 
-public enum DrawingTool { Pen, Highlighter, Eraser, Line, Arrow, Rectangle, Ellipse, Text, Fading }
+public enum DrawingTool { Pen, Highlighter, Eraser, Line, Arrow, Rectangle, Ellipse, Text, Fading, Select, PartialEraser, Pan }
 public enum CanvasAction
 {
     Undo, Redo, Clear, Export, Hide, Exit, NewLesson, OpenLesson, SaveLesson, SaveLessonAs,
     CycleBoard, ToggleBackground, PreviousPage, NextPage, AddPage, DuplicatePage, RenamePage, DeletePage, RestorePage,
-    ClearTemporary, Settings, Ghost, CustomColor, CopyScreenshot, RegionScreenshot
+    ClearTemporary, Settings, Ghost, CustomColor, CopyScreenshot, RegionScreenshot,
+    DuplicateSelection, DeleteSelection, Freeze, ExportPdf, Import, ZoomIn, ZoomOut, ResetView,
+    ToggleSpotlight, PatternNone, PatternGrid, PatternRuled, RemoveImage
 }
 
 public sealed class ToolbarViewModel : ObservableObject
@@ -32,7 +34,29 @@ public sealed class ToolbarViewModel : ObservableObject
     private string _color, _notice = "Ready · Desktop ink stays fixed when content scrolls.";
     private string _lessonLabel = "Untitled lesson", _pageLabel = "Board 1 / 1", _boardLabel = "Board: desktop", _shortcutHint = "";
     private double _thickness, _textSize;
-    private bool _pressureEnabled, _palmRejection;
+    private bool _pressureEnabled, _palmRejection, _frozenScreen, _spotlightEnabled;
+    private double _zoom = 1, _panX, _panY, _spotlightRadius = 110;
+    private int _selectionCount;
+    public int SelectionCount { get => _selectionCount; set { if (SetProperty(ref _selectionCount, value)) RefreshCommands(); } }
+    public bool CanNavigateCanvas => !_isDesktop || FrozenScreen;
+    public bool FrozenScreen
+    {
+        get => _frozenScreen;
+        set { if (SetProperty(ref _frozenScreen, value)) { OnPropertyChanged(nameof(FreezeLabel)); OnPropertyChanged(nameof(CanNavigateCanvas)); RefreshCommands(); } }
+    }
+    public string FreezeLabel => FrozenScreen ? "Unfreeze screen" : "Freeze screen";
+    public bool SpotlightEnabled { get => _spotlightEnabled; set => SetProperty(ref _spotlightEnabled, value); }
+    public double SpotlightRadius { get => _spotlightRadius; set { if (double.IsFinite(value)) SetProperty(ref _spotlightRadius, Math.Clamp(value, 30, 400)); } }
+    public double ZoomLevel => _zoom;
+    public double PanX => _panX;
+    public double PanY => _panY;
+    public string ZoomLabel => $"{_zoom:P0}";
+    public void SetView(double zoom, double x, double y)
+    {
+        if (!double.IsFinite(zoom) || !double.IsFinite(x) || !double.IsFinite(y)) return;
+        _zoom = Math.Clamp(zoom, .25, 4); _panX = Math.Clamp(x, -100000, 100000); _panY = Math.Clamp(y, -100000, 100000);
+        OnPropertyChanged(nameof(ZoomLevel)); OnPropertyChanged(nameof(PanX)); OnPropertyChanged(nameof(PanY)); OnPropertyChanged(nameof(ZoomLabel));
+    }
     private readonly Dictionary<string, double> _toolWidths;
     public static IReadOnlyList<string> Palette { get; } = new[] {
         "#6366F1", "#EF4444", "#F59E0B", "#10B981", "#38BDF8", "#FFFFFF", "#171B29", "#000000",
@@ -48,13 +72,14 @@ public sealed class ToolbarViewModel : ObservableObject
         _color = preferences.Color;
         _toolWidths = preferences.ToolWidths is null ? new() : new(preferences.ToolWidths);
         _thickness = _toolWidths.GetValueOrDefault(nameof(DrawingTool.Pen), preferences.Thickness);
+        _spotlightRadius = preferences.SpotlightRadius;
         _pressureEnabled = preferences.PressureEnabled; _palmRejection = preferences.PalmRejection;
         _haloEnabled = preferences.PointerHalo; _touchEnabled = preferences.TouchDrawing;
         // Start narrow even when upgrading a previously expanded installation.
         _isExpanded = false; _fadeSeconds = preferences.FadeSeconds; _textSize = preferences.TextSize;
         UpdateShortcuts(preferences.EffectiveShortcuts());
         ToggleDrawCommand = Track(new RelayCommand(() => IsDrawing = !IsDrawing, () => !IsBusy));
-        SelectToolCommand = Track(new RelayCommand<DrawingTool>(tool => { Tool = tool; ShowInk = true; IsDrawing = true; }, _ => !IsBusy));
+        SelectToolCommand = Track(new RelayCommand<DrawingTool>(tool => { Tool = tool; ShowInk = true; IsDrawing = true; }, tool => !IsBusy && (tool != DrawingTool.Pan || CanNavigateCanvas)));
         SelectColorCommand = Track(new RelayCommand<string>(color => { if (color is not null) Color = color; }, _ => !IsBusy));
         IRelayCommand Make(CanvasAction action, Func<bool>? enabled = null) =>
             Track(new RelayCommand(() => dispatch(action), () => !IsBusy && (enabled?.Invoke() ?? true)));
@@ -82,6 +107,19 @@ public sealed class ToolbarViewModel : ObservableObject
         CustomColorCommand = Make(CanvasAction.CustomColor);
         CopyScreenshotCommand = Make(CanvasAction.CopyScreenshot);
         RegionScreenshotCommand = Make(CanvasAction.RegionScreenshot);
+        DuplicateSelectionCommand = Make(CanvasAction.DuplicateSelection, () => SelectionCount > 0);
+        DeleteSelectionCommand = Make(CanvasAction.DeleteSelection, () => SelectionCount > 0);
+        FreezeCommand = Make(CanvasAction.Freeze, () => _isDesktop || FrozenScreen);
+        ExportPdfCommand = Make(CanvasAction.ExportPdf);
+        ImportCommand = Make(CanvasAction.Import, () => _canAdd);
+        ZoomInCommand = Make(CanvasAction.ZoomIn, () => CanNavigateCanvas);
+        ZoomOutCommand = Make(CanvasAction.ZoomOut, () => CanNavigateCanvas);
+        ResetViewCommand = Make(CanvasAction.ResetView);
+        ToggleSpotlightCommand = Make(CanvasAction.ToggleSpotlight);
+        PatternNoneCommand = Make(CanvasAction.PatternNone, () => !_isDesktop);
+        PatternGridCommand = Make(CanvasAction.PatternGrid, () => !_isDesktop);
+        PatternRuledCommand = Make(CanvasAction.PatternRuled, () => !_isDesktop);
+        RemoveImageCommand = Make(CanvasAction.RemoveImage, () => !_isDesktop);
         HideCommand = new RelayCommand(() => dispatch(CanvasAction.Hide));
         CollapseCommand = new RelayCommand(() => IsExpanded = !IsExpanded);
     }
@@ -172,13 +210,14 @@ public sealed class ToolbarViewModel : ObservableObject
     public void UpdateWorkspace(LessonWorkspace workspace, int strokeCount)
     {
         _isDesktop = workspace.IsDesktop;
+        OnPropertyChanged(nameof(CanNavigateCanvas));
         _canUndo = workspace.CanUndo; _canRedo = workspace.CanRedo;
         _itemCount = strokeCount + workspace.ActivePage.Texts.Count;
         _canPrevious = workspace.ActivePageIndex > 0 || workspace.IsDesktop;
         _canNext = workspace.ActivePageIndex < workspace.PageCount - 1 || workspace.IsDesktop;
         _canDelete = !workspace.IsDesktop && workspace.PageCount > 1;
         _canRestore = workspace.CanRestorePage;
-        _canAdd = workspace.PageCount < LessonStore.MaximumPages;
+        _canAdd = workspace.ImportCapacity > 0;
         LessonLabel = (workspace.FilePath is { } path ? Path.GetFileName(path) : "Untitled lesson") + (workspace.IsDirty ? " *" : "");
         PageLabel = $"{workspace.ActivePageIndex + 1} / {workspace.PageCount} · {workspace.BoardPageName}";
         BoardLabel = workspace.IsDesktop ? "Board: desktop" : workspace.ActivePage.Background == PageBackground.White ? "Board: white" : "Board: black";
@@ -214,4 +253,17 @@ public sealed class ToolbarViewModel : ObservableObject
     public IRelayCommand CustomColorCommand { get; }
     public IRelayCommand CopyScreenshotCommand { get; }
     public IRelayCommand RegionScreenshotCommand { get; }
+    public IRelayCommand DuplicateSelectionCommand { get; }
+    public IRelayCommand DeleteSelectionCommand { get; }
+    public IRelayCommand FreezeCommand { get; }
+    public IRelayCommand ExportPdfCommand { get; }
+    public IRelayCommand ImportCommand { get; }
+    public IRelayCommand ZoomInCommand { get; }
+    public IRelayCommand ZoomOutCommand { get; }
+    public IRelayCommand ResetViewCommand { get; }
+    public IRelayCommand ToggleSpotlightCommand { get; }
+    public IRelayCommand PatternNoneCommand { get; }
+    public IRelayCommand PatternGridCommand { get; }
+    public IRelayCommand PatternRuledCommand { get; }
+    public IRelayCommand RemoveImageCommand { get; }
 }

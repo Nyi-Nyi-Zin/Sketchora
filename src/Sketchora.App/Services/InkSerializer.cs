@@ -34,7 +34,11 @@ public static class InkSerializer
     public static void Validate(LessonDocument document)
     {
         LessonStore.Validate(document);
-        foreach (var page in document.Pages.Prepend(document.Desktop)) _ = Decode(page.Ink);
+        foreach (var page in document.Pages.Prepend(document.Desktop))
+        {
+            _ = Decode(page.Ink);
+            if (page.ImagePng.Length > 0) _ = LessonRenderer.DecodeImage(page.ImagePng);
+        }
     }
 
     public static LessonDocument Resize(LessonDocument source, double width, double height, bool fit)
@@ -45,12 +49,19 @@ public static class InkSerializer
         var dy = fit ? (height - source.CanvasHeight * scale) / 2 : 0;
         LessonPage Transform(LessonPage page)
         {
-            if (!fit) return page.Copy();
+            PageImageRect? placement = page.ImagePlacement;
+            if (page.ImagePng.Length > 0 && placement is null)
+            {
+                var size = EmbeddedPng.Dimensions(page.ImagePng);
+                placement = PageImageRect.Fit(size.Width, size.Height, source.CanvasWidth, source.CanvasHeight);
+            }
+            if (!fit) return page.Copy() with { ImagePlacement = placement };
             var strokes = Decode(page.Ink);
             strokes.Transform(new Matrix(scale, 0, 0, scale, dx, dy), applyToStylusTip: true);
             return page with
             {
                 Ink = Encode(strokes),
+                ImagePlacement = placement is null ? null : new PageImageRect(placement.X * scale + dx, placement.Y * scale + dy, placement.Width * scale, placement.Height * scale),
                 Texts = page.Texts.Select(text => text with
                 {
                     X = text.X * scale + dx, Y = text.Y * scale + dy,

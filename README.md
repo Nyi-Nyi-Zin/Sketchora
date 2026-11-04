@@ -2,13 +2,11 @@
 
 A Windows desktop app for annotating code, drawing sketches and explaining lessons while sharing your display.
 
-**Version 3 update: v0.3.1-preview.1.** Adds 24 colours/custom RGB, configurable per-tool/action hotkeys, Ghost Mode, per-tool widths, region/clipboard screenshots, a virtual-desktop canvas, simultaneous finger ink and pen input controls. This is a development preview. Actual pen/touch hardware, display scaling and receiver-side Zoom/Meet capture still need manual validation; automated build/tests are not a substitute.
+**Teaching update: v0.4.0-preview.1.** Adds ink selection/move/resize/copy, partial erasing, frozen-screen annotation, image/PDF worksheets, multi-page PDF export, zoom/pan, grid/ruled boards and spotlight. The compact icon toolbar remains the startup default. This is a development preview; real pen/touch hardware, display scaling and receiver-side Zoom/Meet capture still need manual validation.
 
 ## Download or build
 
-**[Download v0.3.1 Windows preview](https://github.com/Nyi-Nyi-Zin/Sketchora/actions/runs/41811137768/artifacts/13312676497)** · [Passing Windows build and all 73 tests](https://github.com/Nyi-Nyi-Zin/Sketchora/actions/runs/41811137768)
-
-Includes the compact toolbar, live shortcut hints, custom app icon, raw pen-path rendering and concurrent-touch fixes. Earlier previews do not contain the toolbar update.
+The v0.4.0 Windows build and download are published by the workflow linked below. See [teaching tools](docs/TEACHING-TOOLS.md) for usage and limits.
 
 Open the latest successful run of [Build and test Sketchora](https://github.com/Nyi-Nyi-Zin/Sketchora/actions/workflows/build.yml), then download the **Sketchora-win-x64** artifact. GitHub may require sign-in. Extract the ZIP and open `Sketchora.exe`, keeping the extracted files together. It is a self-contained, unsigned Windows 11 x64 portable app, not an installer. Actions artifacts expire; use a current successful run.
 
@@ -35,7 +33,7 @@ dotnet run --project src/Sketchora.App/Sketchora.App.csproj
 
 ## Editable lessons and recovery
 
-Use **New / Open / Save / Save as** for `.sketchora` lessons. These files preserve desktop ink, board pages, text labels, page backgrounds, canvas dimensions and selection. PNG is a separate flattened export.
+Use **New / Open / Save / Save as** for `.sketchora` lessons. These files preserve desktop ink, board pages, text labels, page backgrounds/patterns, embedded worksheets, canvas dimensions and the active page. PNG is a separate flattened export.
 
 - Save/Open do not embed screenshots of other apps or the desktop.
 - Failed or invalid file loads keep your current lesson intact. New/Open/Quit offers **Save / Discard / Cancel** when edits are unsaved.
@@ -76,6 +74,7 @@ All global bindings use **Ctrl + Alt**. Defaults:
 | P / M / E | Pen / Highlighter / Eraser |
 | L / A / R / O | Line / Arrow / Rectangle / Ellipse |
 | T / F | Text / Fading ink |
+| V / Q / U | Select ink / Partial eraser / Pan board or frozen screen |
 | Z / Y / C | Undo / Redo / Clear |
 | S / B / X | Save PNG / Copy screenshot / Capture region |
 | W | Desktop–board switch |
@@ -90,7 +89,7 @@ Use **entire display sharing** in Zoom/Meet. Individual-window sharing may omit 
 
 The canvas and screenshots now span the **combined Windows virtual desktop**, including monitors left of or above the primary display. On display/DPI changes the canvas bounds update, unfinished touch ink is cancelled and the toolbar is recovered to the primary work area. Authored positions are preserved relative to the canvas origin; check alignment after rearranging displays. A spanning WPF window has a single coordinate/DPI transform: mixed-DPI accuracy, hot-plug behavior, actual touch/pen devices, pressure/proximity filtering and meeting capture still need the [manual checklist](docs/WINDOWS-CHECKLIST.md). Secure desktop, elevated apps and exclusive full-screen apps are outside the initial support target.
 
-General object rotation/resize, PDF, recording, cloud sync, collaboration, installers, automatic updates and macOS/Linux are not included. No account, backend or app analytics is used.
+Selection resize applies to ink and shapes; text labels use their separate Text editor, and imported worksheets are page backgrounds. Rotation, recording, cloud sync, collaboration, installers, automatic updates and macOS/Linux are not included. No account, backend or app analytics is used.
 
 Preferences and recovery are local under `%LOCALAPPDATA%\Sketchora`. Unexpected UI errors release the screen and log to `error.log` there.
 
@@ -111,4 +110,4 @@ The full suite requires Windows because it includes WPF adapters and hidden-wind
 | `tests/Sketchora.Core.Tests` | Storage, history, page isolation, failure paths, expiry, save choices and shortcut rollback |
 | `tests/Sketchora.App.Tests` | Windows ink/pressure round-trip, fitting, UI construction and transient/permanent separation |
 
-See [Version 3 additions](docs/VERSION-3-FEATURES.md), [Version 2 plan](docs/VERSION-2-PLAN.md), [validation record](docs/VALIDATION.md) and [Windows checklist](docs/WINDOWS-CHECKLIST.md).
+See [Teaching tools](docs/TEACHING-TOOLS.md), [Version 3 additions](docs/VERSION-3-FEATURES.md), [Version 2 plan](docs/VERSION-2-PLAN.md), [validation record](docs/VALIDATION.md) and [Windows checklist](docs/WINDOWS-CHECKLIST.md).

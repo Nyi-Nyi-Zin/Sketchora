@@ -15,10 +15,10 @@ public sealed record AppPreferences
     public double TextSize { get; init; } = 24;
     public bool PressureEnabled { get; init; } = true;
     public bool PalmRejection { get; init; } = true;
+    public double SpotlightRadius { get; init; } = 110;
     public Dictionary<string, double>? ToolWidths { get; init; }
     public Dictionary<string, uint>? Shortcuts { get; init; }
-    public Dictionary<string, uint> EffectiveShortcuts() => ShortcutCatalog.IsValid(Shortcuts)
-        ? new(Shortcuts!) : ShortcutCatalog.Defaults(DrawShortcut, HideShortcut);
+    public Dictionary<string, uint> EffectiveShortcuts() => ShortcutCatalog.Upgrade(Shortcuts) ?? ShortcutCatalog.Defaults(DrawShortcut, HideShortcut);
 
     public AppPreferences Normalize() => this with
     {
@@ -29,8 +29,9 @@ public sealed record AppPreferences
         DrawShortcut = ValidShortcuts(DrawShortcut, HideShortcut) ? DrawShortcut : 'D',
         HideShortcut = ValidShortcuts(DrawShortcut, HideShortcut) ? HideShortcut : 'H',
         FadeSeconds = FadeSeconds is 1 or 3 or 5 ? FadeSeconds : 3,
+        SpotlightRadius = double.IsFinite(SpotlightRadius) ? Math.Clamp(SpotlightRadius, 30, 400) : 110,
         TextSize = double.IsFinite(TextSize) ? Math.Clamp(TextSize, 8, 200) : 24,
-        Shortcuts = ShortcutCatalog.IsValid(Shortcuts) ? Shortcuts : null,
+        Shortcuts = ShortcutCatalog.Upgrade(Shortcuts),
         ToolWidths = ToolWidths?.Where(p => ShortcutCatalog.Tools.Contains(p.Key))
             .ToDictionary(p => p.Key, p => double.IsFinite(p.Value) ? Math.Clamp(p.Value, 1, 20) : 4)
     };

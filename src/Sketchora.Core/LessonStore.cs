@@ -73,7 +73,7 @@ public sealed class LessonStore
 
     public static void Validate(LessonDocument document)
     {
-        if (document.SchemaVersion != 1)
+        if (document.SchemaVersion is not (1 or 2))
             throw new InvalidDataException($"Unsupported lesson format version {document.SchemaVersion}. Update Sketchora to open newer files.");
         if (!ValidDimension(document.CanvasWidth) || !ValidDimension(document.CanvasHeight))
             throw new InvalidDataException("Invalid canvas dimensions.");
@@ -87,6 +87,11 @@ public sealed class LessonStore
                 || page.Name.Length > 120 || !Enum.IsDefined(page.Background) || page.Ink is null
                 || page.Ink.Length > MaximumInkCharacters || page.Texts is null || page.Texts.Count > MaximumLabelsPerPage)
                 throw new InvalidDataException("Invalid page or page limit exceeded.");
+            if (!Enum.IsDefined(page.Pattern) || page.ImagePng is null) throw new InvalidDataException("Invalid page pattern or image.");
+            if (page.ImagePng.Length > 0) EmbeddedPng.Validate(page.ImagePng);
+            if (page.ImagePlacement is { } rect && (!new[] { rect.X, rect.Y, rect.Width, rect.Height }.All(double.IsFinite)
+                || Math.Abs(rect.X) > 1_000_000 || Math.Abs(rect.Y) > 1_000_000 || rect.Width is <= 0 or > 1_000_000 || rect.Height is <= 0 or > 1_000_000))
+                throw new InvalidDataException("Invalid page image placement.");
             if (page.Ink.Length > 0)
             {
                 var buffer = new byte[page.Ink.Length / 4 * 3 + 3];
@@ -104,6 +109,12 @@ public sealed class LessonStore
         }
     }
 
+    public static void ValidateStorageSize(LessonDocument document)
+    {
+        Validate(document);
+        if (JsonSerializer.SerializeToUtf8Bytes(document, Options).LongLength > MaximumFileBytes)
+            throw new InvalidDataException("This lesson exceeds the 32 MiB limit. Import fewer or smaller pages.");
+    }
     public static bool IsColor(string? color) => color is { Length: 7 } && color[0] == '#'
         && color.AsSpan(1).ToArray().All(Uri.IsHexDigit);
     private static bool ValidDimension(double number) => double.IsFinite(number) && number is >= 1 and <= 32768;

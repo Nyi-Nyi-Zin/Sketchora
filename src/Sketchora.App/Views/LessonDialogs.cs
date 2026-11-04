@@ -31,6 +31,28 @@ internal static class LessonDialogs
         return window.ShowDialog() == true ? input.Text.Trim() : null;
     }
 
+    public static (int First, int Last)? PdfRange(Window owner, int pages, int capacity)
+    {
+        var panel = new StackPanel { Margin = new Thickness(20) };
+        panel.Children.Add(new TextBlock { Text = $"PDF: {pages} page(s). Space for {capacity} board page(s).", TextWrapping = TextWrapping.Wrap });
+        panel.Children.Add(new Label { Content = "First page" });
+        var first = new TextBox { Text = "1", Padding = new Thickness(7) }; panel.Children.Add(first);
+        panel.Children.Add(new Label { Content = "Last page" });
+        var last = new TextBox { Text = Math.Min(pages, capacity).ToString(), Padding = new Thickness(7) }; panel.Children.Add(last);
+        var error = new TextBlock { Foreground = Brushes.Firebrick, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 8, 0, 0) }; panel.Children.Add(error);
+        var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
+        var import = Button("Import"); var cancel = Button("Cancel"); cancel.IsCancel = true;
+        buttons.Children.Add(import); buttons.Children.Add(cancel); panel.Children.Add(buttons);
+        var window = Shell(owner, "Import PDF pages", panel);
+        (int First, int Last)? selected = null;
+        import.Click += (_, _) =>
+        {
+            if (!int.TryParse(first.Text, out var a) || !int.TryParse(last.Text, out var b) || a < 1 || b < a || b > pages || b - a + 1 > capacity)
+            { error.Text = "Choose a valid page range within the available board capacity."; return; }
+            selected = (a, b); window.DialogResult = true;
+        };
+        return window.ShowDialog() == true ? selected : null;
+    }
     public static void Shortcuts(Window owner, IReadOnlyDictionary<string, uint> current, Func<Dictionary<string, uint>, string?> apply)
     {
         var panel = new StackPanel { Margin = new Thickness(20) };

@@ -3,6 +3,7 @@ using System.Text.Json.Serialization;
 namespace Sketchora.Core;
 
 public enum PageBackground { White, Black }
+public enum PagePattern { None, Grid, Ruled }
 
 public sealed record TextLabel
 {
@@ -22,6 +23,16 @@ public sealed record TextLabel
     public string FontFamily { get; init; } = "Myanmar Text, Segoe UI";
 }
 
+public sealed record PageImageRect(double X, double Y, double Width, double Height)
+{
+    public static PageImageRect Fit(double pixelWidth, double pixelHeight, double width, double height)
+    {
+        var scale = Math.Min(width / pixelWidth, height / pixelHeight);
+        var w = pixelWidth * scale; var h = pixelHeight * scale;
+        return new((width - w) / 2, (height - h) / 2, w, h);
+    }
+}
+
 public sealed record LessonPage
 {
     [JsonRequired]
@@ -34,6 +45,9 @@ public sealed record LessonPage
     public string Ink { get; init; } = "";
     [JsonRequired]
     public List<TextLabel> Texts { get; init; } = [];
+    public PagePattern Pattern { get; init; }
+    public string ImagePng { get; init; } = "";
+    public PageImageRect? ImagePlacement { get; init; }
     public LessonPage Copy() => this with { Texts = Texts.Select(text => text with { }).ToList() };
 }
 
