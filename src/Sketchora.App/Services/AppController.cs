@@ -28,6 +28,7 @@ internal sealed class AppController : IDisposable
     private readonly DispatcherTimer _autosave;
     private HotkeyService? _hotkeys;
     private Forms.NotifyIcon? _tray;
+    private Icon? _appIcon;
     private TextEditorWindow? _textEditor;
     private RegionCaptureWindow? _capturePicker;
     private Task _recoveryTask = Task.CompletedTask;
@@ -145,7 +146,9 @@ internal sealed class AppController : IDisposable
         menu.Items.Add("Hide all / release screen", null, (_, _) => OnUi(EmergencyHide));
         menu.Items.Add(new Forms.ToolStripSeparator());
         menu.Items.Add("Quit Sketchora", null, (_, _) => OnUi(() => _ = RunAsync(ExitAsync)));
-        _tray = new Forms.NotifyIcon { Text = "Sketchora · screen annotation", Icon = SystemIcons.Application, ContextMenuStrip = menu, Visible = true };
+        using (var stream = Application.GetResourceStream(new Uri("/Sketchora;component/Assets/Sketchora.ico", UriKind.Relative)).Stream)
+            _appIcon = new Icon(stream);
+        _tray = new Forms.NotifyIcon { Text = "Sketchora · screen annotation", Icon = _appIcon, ContextMenuStrip = menu, Visible = true };
         _tray.DoubleClick += (_, _) => OnUi(ShowAll);
     }
     private static void OnUi(Action action) => Application.Current.Dispatcher.Invoke(action);
@@ -447,7 +450,7 @@ internal sealed class AppController : IDisposable
         _preferences = _preferences with
         {
             Color = _model.Color, Thickness = _model.Thickness, PointerHalo = _model.HaloEnabled, TouchDrawing = _model.TouchEnabled,
-            ToolbarLeft = _toolbar.Left, ToolbarTop = _toolbar.Top, ExpandedToolbar = _model.IsExpanded,
+            ToolbarLeft = _toolbar.Left, ToolbarTop = _toolbar.Top, ExpandedToolbar = false,
             FadeSeconds = _model.FadeSeconds, TextSize = _model.TextSize,
             ToolWidths = _model.ToolWidths, PressureEnabled = _model.PressureEnabled, PalmRejection = _model.PalmRejection
         };
@@ -458,5 +461,6 @@ internal sealed class AppController : IDisposable
     {
         _disposed = true; _autosave.Stop(); _hotkeys?.Dispose();
         if (_tray is not null) { _tray.Visible = false; _tray.ContextMenuStrip?.Dispose(); _tray.Dispose(); }
+        _appIcon?.Dispose();
     }
 }

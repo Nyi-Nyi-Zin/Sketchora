@@ -2,7 +2,7 @@
 
 A Windows desktop app for annotating code, drawing sketches and explaining lessons while sharing your display.
 
-**Version 3: v0.3.0-preview.1.** Adds 24 colours/custom RGB, configurable per-tool/action hotkeys, Ghost Mode, per-tool widths, region/clipboard screenshots, a virtual-desktop canvas, simultaneous finger ink and pen input controls. This is a development preview. Actual pen/touch hardware, display scaling and receiver-side Zoom/Meet capture still need manual validation; automated build/tests are not a substitute.
+**Version 3 update: v0.3.1-preview.1.** Adds 24 colours/custom RGB, configurable per-tool/action hotkeys, Ghost Mode, per-tool widths, region/clipboard screenshots, a virtual-desktop canvas, simultaneous finger ink and pen input controls. This is a development preview. Actual pen/touch hardware, display scaling and receiver-side Zoom/Meet capture still need manual validation; automated build/tests are not a substitute.
 
 ## Download or build
 
@@ -62,7 +62,11 @@ To edit existing labels, select Text again, then **drag to move** or **double-cl
 
 ## Toolbar, shortcuts and recovery
 
-The toolbar can be moved, collapsed and recovered through the tray. **Ghost Mode** hides only the toolbar while ink and drawing remain active. Its shortcut restores it; **Show toolbar** in the tray also recovers it. **Hide all** remains a separate emergency action that hides ink and releases input. Ghost Mode is session-only and never hides the toolbar on startup. The compact view retains Pen, Laser, Board and Save actions and shows the current tool/mode.
+The toolbar can be moved, collapsed and recovered through the tray. **Ghost Mode** hides only the toolbar while ink and drawing remain active. Its shortcut restores it; **Show toolbar** in the tray also recovers it. **Hide all** remains a separate emergency action that hides ink and releases input. Ghost Mode is session-only and never hides the toolbar on startup. Every launch starts as a **60-DIP icon rail**, including upgrades from saved expanded layouts. It contains desktop interaction, ink visibility, a drawing-tool menu, eraser, colour/width menu, undo/redo, clear, screenshot menu, clipboard copy and board switching. **Expand settings** opens lesson/page/input controls beside the rail; each action appears once. Expansion is session-only.
+
+Hover a control to see its name and the **currently assigned** global shortcut. Tips update when shortcuts change, distinguish toolbar-focused Ctrl shortcuts, and say when no global key is assigned. The app has a custom pen-nib icon in the executable, toolbar and system tray.
+
+New pen/highlighter/fading strokes use the captured path directly with **curve fitting disabled**. This prevents the post-lift Bézier reshaping previously visible when writing or drawing corners. Existing authored strokes retain their stored attributes.
 
 All global bindings use **Ctrl + Alt**. Defaults:
 

@@ -17,7 +17,18 @@ public sealed class ToolbarViewModel : ObservableObject
     private readonly List<IRelayCommand> _commands = [];
     private bool _isDrawing, _isBusy;
     private bool _showInk = true, _haloEnabled, _touchEnabled, _isExpanded;
-    private DrawingTool _tool, _previousTool;
+    private DrawingTool _tool, _previousTool, _primaryTool;
+    private Dictionary<string, uint> _shortcuts = ShortcutCatalog.Defaults();
+    private int _shortcutRevision;
+    public int ShortcutRevision => _shortcutRevision;
+    public DrawingTool PrimaryTool => _primaryTool;
+    public string PrimaryToolTip => GetToolTip("Tool." + _primaryTool, _primaryTool + " · Choose drawing tool");
+    public string PrimaryToolGlyph => _primaryTool.ToString();
+    public string WidthTip => GetToolTip("WidthUp", "Increase width") + "\n" + GetToolTip("WidthDown", "Decrease width");
+    public string DrawTip => GetToolTip("Draw", ModeActionLabel);
+    public string ExpandTip => GetToolTip("Collapse", IsExpanded ? "Collapse settings" : "Expand settings");
+    public bool IsPrimaryToolActive => IsDrawing && Tool != DrawingTool.Eraser;
+    public bool IsEraserActive => IsDrawing && Tool == DrawingTool.Eraser;
     private string _color, _notice = "Ready · Desktop ink stays fixed when content scrolls.";
     private string _lessonLabel = "Untitled lesson", _pageLabel = "Board 1 / 1", _boardLabel = "Board: desktop", _shortcutHint = "";
     private double _thickness, _textSize;
@@ -39,7 +50,8 @@ public sealed class ToolbarViewModel : ObservableObject
         _thickness = _toolWidths.GetValueOrDefault(nameof(DrawingTool.Pen), preferences.Thickness);
         _pressureEnabled = preferences.PressureEnabled; _palmRejection = preferences.PalmRejection;
         _haloEnabled = preferences.PointerHalo; _touchEnabled = preferences.TouchDrawing;
-        _isExpanded = preferences.ExpandedToolbar; _fadeSeconds = preferences.FadeSeconds; _textSize = preferences.TextSize;
+        // Start narrow even when upgrading a previously expanded installation.
+        _isExpanded = false; _fadeSeconds = preferences.FadeSeconds; _textSize = preferences.TextSize;
         UpdateShortcuts(preferences.EffectiveShortcuts());
         ToggleDrawCommand = Track(new RelayCommand(() => IsDrawing = !IsDrawing, () => !IsBusy));
         SelectToolCommand = Track(new RelayCommand<DrawingTool>(tool => { Tool = tool; ShowInk = true; IsDrawing = true; }, _ => !IsBusy));
@@ -87,7 +99,11 @@ public sealed class ToolbarViewModel : ObservableObject
         set
         {
             if (value && IsBusy) return;
-            if (SetProperty(ref _isDrawing, value)) { OnPropertyChanged(nameof(ModeLabel)); OnPropertyChanged(nameof(ModeActionLabel)); }
+            if (SetProperty(ref _isDrawing, value))
+            {
+                OnPropertyChanged(nameof(ModeLabel)); OnPropertyChanged(nameof(ModeActionLabel));
+                OnPropertyChanged(nameof(DrawTip)); NotifyToolState();
+            }
         }
     }
     public string ModeLabel => IsDrawing ? "DRAW" : "INTERACT";
@@ -97,7 +113,16 @@ public sealed class ToolbarViewModel : ObservableObject
     public bool TouchEnabled { get => _touchEnabled; set => SetProperty(ref _touchEnabled, value); }
     public bool PressureEnabled { get => _pressureEnabled; set => SetProperty(ref _pressureEnabled, value); }
     public bool PalmRejection { get => _palmRejection; set => SetProperty(ref _palmRejection, value); }
-    public bool IsExpanded { get => _isExpanded; set => SetProperty(ref _isExpanded, value); }
+    public bool IsExpanded
+    {
+        get => _isExpanded;
+        set { if (SetProperty(ref _isExpanded, value)) OnPropertyChanged(nameof(ExpandTip)); }
+    }
+    private void NotifyToolState()
+    {
+        OnPropertyChanged(nameof(IsPrimaryToolActive)); OnPropertyChanged(nameof(IsEraserActive));
+        OnPropertyChanged(nameof(PrimaryToolGlyph)); OnPropertyChanged(nameof(PrimaryToolTip));
+    }
     public DrawingTool Tool
     {
         get => _tool;
@@ -108,6 +133,8 @@ public sealed class ToolbarViewModel : ObservableObject
             if (value == DrawingTool.Text) _previousTool = _tool;
             if (SetProperty(ref _tool, value))
             {
+                if (value != DrawingTool.Eraser) _primaryTool = value;
+                NotifyToolState();
                 _thickness = _toolWidths.GetValueOrDefault(value.ToString(), 4);
                 OnPropertyChanged(nameof(Thickness));
             }
@@ -128,8 +155,19 @@ public sealed class ToolbarViewModel : ObservableObject
     public string PageLabel { get => _pageLabel; private set => SetProperty(ref _pageLabel, value); }
     public string BoardLabel { get => _boardLabel; private set => SetProperty(ref _boardLabel, value); }
     public string ShortcutHint { get => _shortcutHint; private set => SetProperty(ref _shortcutHint, value); }
-    public void UpdateShortcuts(IReadOnlyDictionary<string, uint> keys) => ShortcutHint =
-        $"Ctrl + Alt + {ShortcutCatalog.KeyName(keys["Draw"])} · Draw / interact\nCtrl + Alt + {ShortcutCatalog.KeyName(keys["Hide"])} · Hide / show all\nCtrl + Alt + {ShortcutCatalog.KeyName(keys["Ghost"])} · Ghost Mode";
+    public void UpdateShortcuts(IReadOnlyDictionary<string, uint> keys)
+    {
+        _shortcuts = new(keys); _shortcutRevision++;
+        ShortcutHint = $"Ctrl + Alt + {ShortcutCatalog.KeyName(keys["Draw"])} · Draw / interact\nCtrl + Alt + {ShortcutCatalog.KeyName(keys["Hide"])} · Hide / show all\nCtrl + Alt + {ShortcutCatalog.KeyName(keys["Ghost"])} · Ghost Mode";
+        OnPropertyChanged(nameof(ShortcutRevision)); OnPropertyChanged(nameof(PrimaryToolTip));
+        OnPropertyChanged(nameof(DrawTip)); OnPropertyChanged(nameof(ExpandTip)); OnPropertyChanged(nameof(WidthTip));
+    }
+    public string GetToolTip(string action, string label, string? localKey = null)
+    {
+        var key = _shortcuts.GetValueOrDefault(action);
+        var shortcut = key == 0 ? "Global shortcut: not assigned" : "Ctrl + Alt + " + ShortcutCatalog.KeyName(key);
+        return label + "\n" + shortcut + (string.IsNullOrWhiteSpace(localKey) ? "" : "\n" + localKey + " (toolbar focused)");
+    }
 
     public void UpdateWorkspace(LessonWorkspace workspace, int strokeCount)
     {

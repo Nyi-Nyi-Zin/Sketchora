@@ -1,189 +1,675 @@
-<Window x:Class="Sketchora.App.Views.ToolbarWindow"
-    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:vm="clr-namespace:Sketchora.App.ViewModels"
-    xmlns:converters="clr-namespace:Sketchora.App.Converters"
-    Title="Sketchora" Width="344" SizeToContent="Height" WindowStyle="None"
-    ResizeMode="NoResize" AllowsTransparency="True" Background="Transparent"
-    Topmost="True" ShowInTaskbar="False" UseLayoutRounding="True"
-    FontFamily="Segoe UI" FontSize="13" Foreground="#EEF2FF">
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="clr-namespace:Sketchora.App.ViewModels" xmlns:icons="clr-namespace:Sketchora.App.Controls" xmlns:converters="clr-namespace:Sketchora.App.Converters" xmlns:primitives="clr-namespace:System.Windows.Controls.Primitives;assembly=PresentationFramework" x:Class="Sketchora.App.Views.ToolbarWindow" Title="Sketchora" Icon="/Sketchora;component/Assets/Sketchora.ico" SizeToContent="Height" WindowStyle="None" ResizeMode="NoResize" AllowsTransparency="True" Background="Transparent" Topmost="True" ShowInTaskbar="False" UseLayoutRounding="True" FontFamily="Segoe UI" FontSize="12" Foreground="#E5EDF9">
+  <Window.Style>
+    <Style TargetType="Window">
+      <Setter Property="Width" Value="60"/>
+      <Style.Triggers>
+        <DataTrigger Binding="{Binding IsExpanded}" Value="True">
+          <Setter Property="Width" Value="344"/>
+        </DataTrigger>
+      </Style.Triggers>
+    </Style>
+  </Window.Style>
   <Window.Resources>
-    <BooleanToVisibilityConverter x:Key="BoolVisibility" />
-    <converters:EqualsConverter x:Key="Equals" />
-    <Style TargetType="Button">
-      <Setter Property="Foreground" Value="#EEF2FF" />
-      <Setter Property="Background" Value="#252B3D" />
-      <Setter Property="BorderBrush" Value="#3A435B" />
-      <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="Padding" Value="10,8" />
-      <Setter Property="Margin" Value="3" />
-      <Setter Property="MinHeight" Value="40" />
-      <Setter Property="Cursor" Value="Hand" />
+    <BooleanToVisibilityConverter x:Key="BoolVisibility"/>
+    <converters:EqualsConverter x:Key="Equals"/>
+    <converters:ShortcutTipConverter x:Key="ShortcutTip"/>
+    <Style x:Key="Action" TargetType="primitives:ButtonBase">
+      <Setter Property="Foreground" Value="#CED9EA"/>
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="BorderBrush" Value="Transparent"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="Margin" Value="2"/>
+      <Setter Property="Padding" Value="8,7"/>
+      <Setter Property="MinHeight" Value="36"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="HorizontalContentAlignment" Value="Center"/>
+      <Setter Property="ToolTipService.InitialShowDelay" Value="250"/>
+      <Setter Property="ToolTipService.ShowDuration" Value="15000"/>
+      <Setter Property="ToolTipService.ShowOnDisabled" Value="True"/>
       <Setter Property="Template">
-        <Setter.Value><ControlTemplate TargetType="Button">
-          <Border x:Name="Chrome" Background="{TemplateBinding Background}" CornerRadius="8"
-              BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"
-              Padding="{TemplateBinding Padding}">
-            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
-          </Border>
-          <ControlTemplate.Triggers>
-            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Chrome" Property="BorderBrush" Value="#A5B4FC" /></Trigger>
-            <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Chrome" Property="BorderBrush" Value="White" /></Trigger>
-            <Trigger Property="IsPressed" Value="True"><Setter TargetName="Chrome" Property="Opacity" Value="0.65" /></Trigger>
-            <Trigger Property="IsEnabled" Value="False"><Setter TargetName="Chrome" Property="Opacity" Value="0.35" /></Trigger>
-          </ControlTemplate.Triggers>
-        </ControlTemplate></Setter.Value>
+        <Setter.Value>
+          <ControlTemplate TargetType="primitives:ButtonBase">
+            <Border x:Name="Chrome" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}" CornerRadius="7">
+              <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="Center"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="Chrome" Property="Background" Value="#26364D"/>
+              </Trigger>
+              <Trigger Property="IsKeyboardFocused" Value="True">
+                <Setter TargetName="Chrome" Property="BorderBrush" Value="#7DD3FC"/>
+              </Trigger>
+              <Trigger Property="IsPressed" Value="True">
+                <Setter TargetName="Chrome" Property="Opacity" Value="0.65"/>
+              </Trigger>
+              <Trigger Property="IsEnabled" Value="False">
+                <Setter TargetName="Chrome" Property="Opacity" Value="0.32"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
       </Setter>
     </Style>
-    <Style x:Key="Tool" TargetType="RadioButton">
-      <Setter Property="Margin" Value="3" />
-      <Setter Property="Width" Value="72" />
-      <Setter Property="Height" Value="42" />
-      <Setter Property="Cursor" Value="Hand" />
-      <Setter Property="Foreground" Value="#CED5EA" />
-      <Setter Property="Template"><Setter.Value>
-        <ControlTemplate TargetType="RadioButton">
-          <Border x:Name="Chrome" Background="#252B3D" CornerRadius="8" BorderBrush="#3A435B" BorderThickness="1">
-            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
-          </Border>
-          <ControlTemplate.Triggers>
-            <Trigger Property="IsChecked" Value="True">
-              <Setter TargetName="Chrome" Property="Background" Value="#4F46E5" />
-              <Setter TargetName="Chrome" Property="BorderBrush" Value="#A5B4FC" />
-              <Setter Property="Foreground" Value="White" />
-            </Trigger>
-            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Chrome" Property="BorderBrush" Value="#A5B4FC" /></Trigger>
-            <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Chrome" Property="BorderBrush" Value="White" /></Trigger>
-          </ControlTemplate.Triggers>
-        </ControlTemplate>
-      </Setter.Value></Setter>
+    <Style TargetType="Button" BasedOn="{StaticResource Action}"/>
+    <Style TargetType="ToggleButton" BasedOn="{StaticResource Action}">
+      <Style.Triggers>
+        <Trigger Property="IsChecked" Value="True">
+          <Setter Property="Background" Value="#075985"/>
+          <Setter Property="Foreground" Value="White"/>
+          <Setter Property="BorderBrush" Value="#38BDF8"/>
+        </Trigger>
+      </Style.Triggers>
+    </Style>
+    <Style x:Key="RailButton" TargetType="Button" BasedOn="{StaticResource Action}">
+      <Setter Property="Width" Value="40"/>
+      <Setter Property="Height" Value="38"/>
+      <Setter Property="Padding" Value="6"/>
+    </Style>
+    <Style x:Key="RailToggle" TargetType="ToggleButton" BasedOn="{StaticResource {x:Type ToggleButton}}">
+      <Setter Property="Width" Value="40"/>
+      <Setter Property="Height" Value="38"/>
+      <Setter Property="Padding" Value="6"/>
+    </Style>
+    <Style x:Key="DrawButton" TargetType="Button" BasedOn="{StaticResource RailButton}">
+      <Style.Triggers>
+        <DataTrigger Binding="{Binding IsDrawing}" Value="False">
+          <Setter Property="Background" Value="#075985"/>
+          <Setter Property="BorderBrush" Value="#38BDF8"/>
+          <Setter Property="Foreground" Value="White"/>
+        </DataTrigger>
+      </Style.Triggers>
+    </Style>
+    <Style x:Key="PrimaryToolToggle" TargetType="ToggleButton" BasedOn="{StaticResource RailToggle}">
+      <Style.Triggers>
+        <DataTrigger Binding="{Binding IsPrimaryToolActive}" Value="True">
+          <Setter Property="Background" Value="#075985"/>
+          <Setter Property="BorderBrush" Value="#38BDF8"/>
+          <Setter Property="Foreground" Value="White"/>
+        </DataTrigger>
+      </Style.Triggers>
+    </Style>
+    <Style x:Key="EraserButton" TargetType="Button" BasedOn="{StaticResource RailButton}">
+      <Style.Triggers>
+        <DataTrigger Binding="{Binding IsEraserActive}" Value="True">
+          <Setter Property="Background" Value="#075985"/>
+          <Setter Property="BorderBrush" Value="#38BDF8"/>
+          <Setter Property="Foreground" Value="White"/>
+        </DataTrigger>
+      </Style.Triggers>
     </Style>
     <Style TargetType="CheckBox">
-      <Setter Property="Foreground" Value="#CED5EA" />
-      <Setter Property="Margin" Value="4,8" />
-      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="Foreground" Value="#CED9EA"/>
+      <Setter Property="Margin" Value="3,6"/>
+      <Setter Property="VerticalContentAlignment" Value="Center"/>
+    </Style>
+    <Style TargetType="ToolTip">
+      <Setter Property="Background" Value="#0B1220"/>
+      <Setter Property="Foreground" Value="#F1F5F9"/>
+      <Setter Property="BorderBrush" Value="#40536C"/>
+      <Setter Property="Padding" Value="10,7"/>
+    </Style>
+    <Style TargetType="Separator">
+      <Setter Property="Background" Value="#2B3A50"/>
+      <Setter Property="Margin" Value="5,6"/>
+    </Style>
+    <Style x:Key="Section" TargetType="TextBlock">
+      <Setter Property="Foreground" Value="#8195AF"/>
+      <Setter Property="FontSize" Value="10"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+      <Setter Property="Margin" Value="3,14,0,6"/>
+    </Style>
+    <Style TargetType="ScrollBar">
+      <Setter Property="Width" Value="4"/>
+      <Setter Property="Background" Value="Transparent"/>
+    </Style>
+    <Style x:Key="Flyout" TargetType="Border">
+      <Setter Property="Background" Value="#172235"/>
+      <Setter Property="BorderBrush" Value="#3A4D67"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="CornerRadius" Value="12"/>
+      <Setter Property="Padding" Value="12"/>
+      <Setter Property="Margin" Value="6"/>
     </Style>
   </Window.Resources>
-  <Border Background="#171B29" BorderBrush="#3A435B" BorderThickness="1" CornerRadius="16" Padding="12">
-    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-    <StackPanel>
-      <Grid Background="Transparent" MouseLeftButtonDown="OnHeaderDrag" Margin="3,2,3,10">
-        <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-          <Border Background="#4F46E5" CornerRadius="7" Padding="7,3" Margin="0,0,9,0"><TextBlock Text="S" FontWeight="Bold" /></Border>
-          <TextBlock Text="Sketchora" FontWeight="SemiBold" FontSize="18" VerticalAlignment="Center" />
+  <Border x:Name="ToolbarSurface" Background="#131D2E" BorderBrush="#3A4D67" BorderThickness="1" CornerRadius="13" Padding="6">
+    <Grid>
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="44"/>
+        <ColumnDefinition Width="*"/>
+      </Grid.ColumnDefinitions>
+      <Popup x:Name="ToolPopup" PlacementTarget="{Binding ElementName=ToolMenuButton}" Placement="Right" IsOpen="{Binding IsChecked, ElementName=ToolMenuButton, Mode=TwoWay}" StaysOpen="False" AllowsTransparency="True" Opened="OnToolMenuOpened" DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+        <Border Style="{StaticResource Flyout}">
+          <StackPanel Width="244">
+            <TextBlock Text="DRAWING TOOLS" Style="{StaticResource Section}" Margin="3,0,0,8"/>
+            <UniformGrid Columns="2">
+              <Button x:Name="PenChoice" Tag="Tool.Pen" AutomationProperties.Name="Pen" Command="{Binding SelectToolCommand}" CommandParameter="{x:Static vm:DrawingTool.Pen}" Click="OnToolChosen">
+                <Button.ToolTip>
+                  <MultiBinding Converter="{StaticResource ShortcutTip}" ConverterParameter="Tool.Pen|Pen">
+                    <Binding/>
+                    <Binding Path="ShortcutRevision"/>
+                  </MultiBinding>
+                </Button.ToolTip>
+                <StackPanel Orientation="Horizontal">
+                  <icons:GlyphIcon Kind="Pen" Width="20" Height="20"/>
+                  <TextBlock Text="Pen" Margin="7,0,0,0" VerticalAlignment="Center"/>
+                </StackPanel>
+              </Button>
+              <Button x:Name="HighlighterChoice" Tag="Tool.Highlighter" AutomationProperties.Name="Highlighter" Command="{Binding SelectToolCommand}" CommandParameter="{x:Static vm:DrawingTool.Highlighter}" Click="OnToolChosen">
+                <Button.ToolTip>
+                  <MultiBinding Converter="{StaticResource ShortcutTip}" ConverterParameter="Tool.Highlighter|Highlighter">
+                    <Binding/>
+                    <Binding Path="ShortcutRevision"/>
+                  </MultiBinding>
+                </Button.ToolTip>
+                <StackPanel Orientation="Horizontal">
+                  <icons:GlyphIcon Kind="Highlighter" Width="20" Height="20"/>
+                  <TextBlock Text="Highlighter" Margin="7,0,0,0" VerticalAlignment="Center"/>
+                </StackPanel>
+              </Button>
+              <Button x:Name="LineChoice" Tag="Tool.Line" AutomationProperties.Name="Line" Command="{Binding SelectToolCommand}" CommandParameter="{x:Static vm:DrawingTool.Line}" Click="OnToolChosen">
+                <Button.ToolTip>
+                  <MultiBinding Converter="{StaticResource ShortcutTip}" ConverterParameter="Tool.Line|Line">
+                    <Binding/>
+                    <Binding Path="ShortcutRevision"/>
+                  </MultiBinding>
+                </Button.ToolTip>
+                <StackPanel Orientation="Horizontal">
+                  <icons:GlyphIcon Kind="Line" Width="20" Height="20"/>
+                  <TextBlock Text="Line" Margin="7,0,0,0" VerticalAlignment="Center"/>
+                </StackPanel>
+              </Button>
+              <Button x:Name="ArrowChoice" Tag="Tool.Arrow" AutomationProperties.Name="Arrow" Command="{Binding SelectToolCommand}" CommandParameter="{x:Static vm:DrawingTool.Arrow}" Click="OnToolChosen">
+                <Button.ToolTip>
+                  <MultiBinding Converter="{StaticResource ShortcutTip}" ConverterParameter="Tool.Arrow|Arrow">
+                    <Binding/>
+                    <Binding Path="ShortcutRevision"/>
+                  </MultiBinding>
+                </Button.ToolTip>
+                <StackPanel Orientation="Horizontal">
+                  <icons:GlyphIcon Kind="Arrow" Width="20" Height="20"/>
+                  <TextBlock Text="Arrow" Margin="7,0,0,0" VerticalAlignment="Center"/>
+                </StackPanel>
+              </Button>
+              <Button x:Name="RectangleChoice" Tag="Tool.Rectangle" AutomationProperties.Name="Rectangle" Command="{Binding SelectToolCommand}" CommandParameter="{x:Static vm:DrawingTool.Rectangle}" Click="OnToolChosen">
+                <Button.ToolTip>
+                  <MultiBinding Converter="{StaticResource ShortcutTip}" ConverterParameter="Tool.Rectangle|Rectangle">
+                    <Binding/>
+                    <Binding Path="ShortcutRevision"/>
+                  </MultiBinding>
+                </Button.ToolTip>
+                <StackPanel Orientation="Horizontal">
+                  <icons:GlyphIcon Kind="Rectangle" Width="20" Height="20"/>
+                  <TextBlock Text="Rectangle" Margin="7,0,0,0" VerticalAlignment="Center"/>
+                </StackPanel>
+              </Button>
+              <Button x:Name="EllipseChoice" Tag="Tool.Ellipse" AutomationProperties.Name="Ellipse" Command="{Binding SelectToolCommand}" CommandParameter="{x:Static vm:DrawingTool.Ellipse}" Click="OnToolChosen">
+                <Button.ToolTip>
+                  <MultiBinding Converter="{StaticResource ShortcutTip}" ConverterParameter="Tool.Ellipse|Ellipse">
+                    <Binding/>
+                    <Binding Path="ShortcutRevision"/>
+                  </MultiBinding>
+                </Button.ToolTip>
+                <StackPanel Orientation="Horizontal">
+                  <icons:GlyphIcon Kind="Ellipse" Width="20" Height="20"/>
+                  <TextBlock Text="Ellipse" Margin="7,0,0,0" VerticalAlignment="Center"/>
+                </StackPanel>
+              </Button>
+              <Button x:Name="TextChoice" Tag="Tool.Text" AutomationProperties.Name="Text" Command="{Binding SelectToolCommand}" CommandParameter="{x:Static vm:DrawingTool.Text}" Click="OnToolChosen">
+                <Button.ToolTip>
+                  <MultiBinding Converter="{StaticResource ShortcutTip}" ConverterParameter="Tool.Text|Text">
+                    <Binding/>
+                    <Binding Path="ShortcutRevision"/>
+                  </MultiBinding>
+                </Button.ToolTip>
+                <StackPanel Orientation="Horizontal">
+                  <icons:GlyphIcon Kind="Text" Width="20" Height="20"/>
+                  <TextBlock Text="Text" Margin="7,0,0,0" VerticalAlignment="Center"/>
+                </StackPanel>
+              </Button>
+              <Button x:Name="FadingChoice" Tag="Tool.Fading" AutomationProperties.Name="Fading ink" Command="{Binding SelectToolCommand}" CommandParameter="{x:Static vm:DrawingTool.Fading}" Click="OnToolChosen">
+                <Button.ToolTip>
+                  <MultiBinding Converter="{StaticResource ShortcutTip}" ConverterParameter="Tool.Fading|Fading ink">
+                    <Binding/>
+                    <Binding Path="ShortcutRevision"/>
+                  </MultiBinding>
+                </Button.ToolTip>
+                <StackPanel Orientation="Horizontal">
+                  <icons:GlyphIcon Kind="Fading" Width="20" Height="20"/>
+                  <TextBlock Text="Fading ink" Margin="7,0,0,0" VerticalAlignment="Center"/>
+                </StackPanel>
+              </Button>
+            </UniformGrid>
+          </StackPanel>
+        </Border>
+      </Popup>
+      <Popup x:Name="ColourPopup" PlacementTarget="{Binding ElementName=ColourMenuButton}" Placement="Right" IsOpen="{Binding IsChecked, ElementName=ColourMenuButton, Mode=TwoWay}" StaysOpen="False" AllowsTransparency="True" DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+        <Border Style="{StaticResource Flyout}">
+          <StackPanel Width="244">
+            <TextBlock Text="COLOUR &amp; WIDTH" Style="{StaticResource Section}" Margin="3,0,0,8"/>
+            <ItemsControl ItemsSource="{Binding Colors}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <UniformGrid Columns="8"/>
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Button Background="{Binding}" Command="{Binding DataContext.SelectColorCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}" AutomationProperties.Name="{Binding}" MinHeight="26" Height="26" Padding="0" BorderBrush="#687D99">
+                    <Button.ToolTip>
+                      <MultiBinding Converter="{StaticResource ShortcutTip}" ConverterParameter="NextColor|Use colour {colour}">
+                        <Binding Path="DataContext" RelativeSource="{RelativeSource AncestorType=ItemsControl}"/>
+                        <Binding Path="DataContext.ShortcutRevision" RelativeSource="{RelativeSource AncestorType=ItemsControl}"/>
+                        <Binding/>
+                      </MultiBinding>
+                    </Button.ToolTip>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <Button x:Name="CustomColorButton" Click="OnCustomColorChosen" Tag="CustomColor" AutomationProperties.Name="Custom colour…" Command="{Binding CustomColorCommand}">
+              <Button.ToolTip>
+                <MultiBinding Converter="{StaticResource ShortcutTip}" ConverterParameter="CustomColor|Custom colour…">
+                  <Binding/>
+                  <Binding Path="ShortcutRevision"/>
+                </MultiBinding>
+              </Button.ToolTip>
+              <TextBlock Text="Custom colour…"/>
+            </Button>
+            <StackPanel Orientation="Horizontal" Margin="3,10,3,2">
+              <Slider Minimum="1" Maximum="20" IsSnapToTickEnabled="True" TickFrequency="1" Value="{Binding Thickness}" Width="178" VerticalAlignment="Center" AutomationProperties.Name="Current tool width" ToolTip="{Binding WidthTip}"/>
+              <TextBlock Text="{Binding Thickness, StringFormat={}{0:0} px}" VerticalAlignment="Center" Margin="10,0,0,0"/>
+            </StackPanel>
+          </StackPanel>
+        </Border>
+      </Popup>
+      <Popup x:Name="CapturePopup" PlacementTarget="{Binding ElementName=CaptureMenuButton}" Placement="Right" IsOpen="{Binding IsChecked, ElementName=CaptureMenuButton, Mode=TwoWay}" StaysOpen="False" AllowsTransparency="True" DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+        <Border Style="{StaticResource Flyout}">
+          <StackPanel Width="200">
+            <Button x:Name="ExportButton" Tag="Export" AutomationProperties.Name="Save PNG" Command="{Binding ExportCommand}" Click="OnCaptureChosen">
+              <Button.ToolTip>
+                <MultiBinding Converter="{StaticResource ShortcutTip}" ConverterParameter="Export|Save PNG">
+                  <Binding/>
+                  <Binding Path="ShortcutRevision"/>
+                </MultiBinding>
+              </Button.ToolTip>
+              <StackPanel Orientation="Horizontal">
+                <icons:GlyphIcon Kind="Camera" Width="20" Height="20"/>
+                <TextBlock Text="Save PNG" Margin="8,0,0,0" VerticalAlignment="Center"/>
+              </StackPanel>
+            </Button>
+            <Button x:Name="RegionButton" Tag="RegionScreenshot" AutomationProperties.Name="Capture region" Command="{Binding RegionScreenshotCommand}" Click="OnCaptureChosen">
+              <Button.ToolTip>
+                <MultiBinding Converter="{StaticResource ShortcutTip}" ConverterParameter="RegionScreenshot|Capture region">
+                  <Binding/>
+                  <Binding Path="ShortcutRevision"/>
+                </MultiBinding>
+              </Button.ToolTip>
+              <StackPanel Orientation="Horizontal">
+                <icons:GlyphIcon Kind="Region" Width="20" Height="20"/>
+                <TextBlock Text="Capture region" Margin="8,0,0,0" VerticalAlignment="Center"/>
+              </StackPanel>
+            </Button>
+          </StackPanel>
+        </Border>
+      </Popup>
+      <ScrollViewer x:Name="RailScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel x:Name="IconRail">
+          <Grid Height="40" Background="Transparent" MouseLeftButtonDown="OnHeaderDrag" ToolTip="Sketchora · Drag to move">
+            <Image Source="/Sketchora;component/Assets/Sketchora.png" Width="30" Height="30" AutomationProperties.Name="Sketchora app icon"/>
+          </Grid>
+          <Button x:Name="DrawButton" Tag="Draw" AutomationProperties.Name="Use desktop or draw" Command="{Binding ToggleDrawCommand}" Style="{StaticResource DrawButton}" ToolTip="{Binding DrawTip}">
+            <icons:GlyphIcon Kind="Cursor" Width="20" Height="20"/>
+          </Button>
+          <ToggleButton x:Name="ShowInkButton" Style="{StaticResource RailToggle}" IsChecked="{Binding ShowInk}" Tag="ToggleInk" AutomationProperties.Name="Show or hide ink">
+            <ToggleButton.ToolTip>
+              <MultiBinding Converter="{StaticResource ShortcutTip}" ConverterParameter="ToggleInk|Show or hide ink">
+                <Binding/>
+                <Binding Path="ShortcutRevision"/>
+              </MultiBinding>
+            </ToggleButton.ToolTip>
+            <icons:GlyphIcon Kind="Eye" Width="20" Height="20"/>
+          </ToggleButton>
+          <Separator/>
+          <ToggleButton x:Name="ToolMenuButton" Style="{StaticResource PrimaryToolToggle}" AutomationProperties.Name="Choose drawing tool" ToolTip="{Binding PrimaryToolTip}">
+            <Grid>
+              <icons:GlyphIcon Kind="{Binding PrimaryToolGlyph}" Width="20" Height="20"/>
+              <Path Data="M0,0 L4,0 4,4 Z" Fill="#94A3B8" Width="4" Height="4" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,-3,-3"/>
+            </Grid>
+          </ToggleButton>
+          <Button x:Name="EraserButton" Tag="Tool.Eraser" AutomationProperties.Name="Eraser" Command="{Binding SelectToolCommand}" Style="{StaticResource EraserButton}" CommandParameter="{x:Static vm:DrawingTool.Eraser}">
+            <Button.ToolTip>
+              <MultiBinding Converter="{StaticResource ShortcutTip}" ConverterParameter="Tool.Eraser|Eraser">
+                <Binding/>
+                <Binding Path="ShortcutRevision"/>
+              </MultiBinding>
+            </Button.ToolTip>
+            <icons:GlyphIcon Kind="Eraser" Width="20" Height="20"/>
+          </Button>
+          <ToggleButton x:Name="ColourMenuButton" Style="{StaticResource RailToggle}" AutomationProperties.Name="Colour and width">
+            <ToggleButton.ToolTip>
+              <MultiBinding Converter="{StaticResource ShortcutTip}" ConverterParameter="NextColor|Colour and width">
+                <Binding/>
+                <Binding Path="ShortcutRevision"/>
+              </MultiBinding>
+            </ToggleButton.ToolTip>
+            <Border Width="22" Height="22" CornerRadius="11" Background="{Binding Color}" BorderBrush="#D6E5F8" BorderThickness="1.5"/>
+          </ToggleButton>
+          <Separator/>
+          <Button x:Name="UndoButton" Tag="Undo" AutomationProperties.Name="Undo" Command="{Binding UndoCommand}" Style="{StaticResource RailButton}">
+            <Button.ToolTip>
+              <MultiBinding Converter="{StaticResource ShortcutTip}" ConverterParameter="Undo|Undo">
+                <Binding/>
+                <Binding Path="ShortcutRevision"/>
+              </MultiBinding>
+            </Button.ToolTip>
+            <icons:GlyphIcon Kind="Undo" Width="20" Height="20"/>
+          </Button>
+          <Button x:Name="RedoButton" Tag="Redo" AutomationProperties.Name="Redo" Command="{Binding RedoCommand}" Style="{StaticResource RailButton}">
+            <Button.ToolTip>
+              <MultiBinding Converter="{StaticResource ShortcutTip}" ConverterParameter="Redo|Redo">
+                <Binding/>
+                <Binding Path="ShortcutRevision"/>
+              </MultiBinding>
+            </Button.ToolTip>
+            <icons:GlyphIcon Kind="Redo" Width="20" Height="20"/>
+          </Button>
+          <Button x:Name="ClearButton" Tag="Clear" AutomationProperties.Name="Clear canvas" Command="{Binding ClearCommand}" Style="{StaticResource RailButton}">
+            <Button.ToolTip>
+              <MultiBinding Converter="{StaticResource ShortcutTip}" ConverterParameter="Clear|Clear canvas">
+                <Binding/>
+                <Binding Path="ShortcutRevision"/>
+              </MultiBinding>
+            </Button.ToolTip>
+            <icons:GlyphIcon Kind="Clear" Width="20" Height="20"/>
+          </Button>
+          <Separator/>
+          <ToggleButton x:Name="CaptureMenuButton" Style="{StaticResource RailToggle}" AutomationProperties.Name="Screenshot options">
+            <ToggleButton.ToolTip>
+              <MultiBinding Converter="{StaticResource ShortcutTip}" ConverterParameter="Export|Screenshot options">
+                <Binding/>
+                <Binding Path="ShortcutRevision"/>
+              </MultiBinding>
+            </ToggleButton.ToolTip>
+            <icons:GlyphIcon Kind="Camera" Width="20" Height="20"/>
+          </ToggleButton>
+          <Button x:Name="CopyScreenshotButton" Tag="CopyScreenshot" AutomationProperties.Name="Copy screenshot" Command="{Binding CopyScreenshotCommand}" Style="{StaticResource RailButton}">
+            <Button.ToolTip>
+              <MultiBinding Converter="{StaticResource ShortcutTip}" ConverterParameter="CopyScreenshot|Copy screenshot">
+                <Binding/>
+                <Binding Path="ShortcutRevision"/>
+              </MultiBinding>
+            </Button.ToolTip>
+            <icons:GlyphIcon Kind="Copy" Width="20" Height="20"/>
+          </Button>
+          <Button x:Name="BoardButton" Tag="CycleBoard" AutomationProperties.Name="Switch desktop and board" Command="{Binding CycleBoardCommand}" Style="{StaticResource RailButton}">
+            <Button.ToolTip>
+              <MultiBinding Converter="{StaticResource ShortcutTip}" ConverterParameter="CycleBoard|Switch desktop and board">
+                <Binding/>
+                <Binding Path="ShortcutRevision"/>
+              </MultiBinding>
+            </Button.ToolTip>
+            <icons:GlyphIcon Kind="Board" Width="20" Height="20"/>
+          </Button>
+          <Separator/>
+          <Button x:Name="ExpandButton" Style="{StaticResource RailButton}" Command="{Binding CollapseCommand}" ToolTip="{Binding ExpandTip}" AutomationProperties.Name="Expand or collapse settings">
+            <icons:GlyphIcon Width="20" Height="20">
+              <icons:GlyphIcon.Style>
+                <Style TargetType="icons:GlyphIcon">
+                  <Setter Property="Kind" Value="Expand"/>
+                  <Style.Triggers>
+                    <DataTrigger Binding="{Binding IsExpanded}" Value="True">
+                      <Setter Property="Kind" Value="Collapse"/>
+                    </DataTrigger>
+                  </Style.Triggers>
+                </Style>
+              </icons:GlyphIcon.Style>
+            </icons:GlyphIcon>
+          </Button>
         </StackPanel>
-        <Button Grid.Column="1" Content="− / +" Command="{Binding CollapseCommand}"
-            AutomationProperties.Name="Collapse or expand toolbar" ToolTip="Collapse or expand toolbar" MinHeight="32" Padding="7,3" />
-      </Grid>
-      <Grid Margin="3,0,3,6">
-        <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-        <Button Content="{Binding ModeActionLabel}" Command="{Binding ToggleDrawCommand}"
-            Background="#4F46E5" BorderBrush="#818CF8" FontWeight="SemiBold"
-            AutomationProperties.Name="Toggle drawing and desktop interaction" ToolTip="{Binding ShortcutHint}" />
-        <TextBlock Grid.Column="1" Text="{Binding ModeLabel}" Foreground="#A5B4FC" FontSize="11"
-            FontWeight="Bold" VerticalAlignment="Center" Margin="10,0,3,0" />
-      </Grid>
-      <TextBlock Text="{Binding LessonLabel}" TextTrimming="CharacterEllipsis" Foreground="#A7B1C9" FontSize="11" Margin="5,0,5,6" ToolTip="{Binding LessonLabel}" />
-      <TextBlock Text="{Binding Tool, StringFormat='Tool: {0}'}" Foreground="#A5B4FC" FontSize="11" Margin="5,0,5,6" />
-      <UniformGrid Rows="1" Columns="4">
-        <Button Content="Pen" Command="{Binding SelectToolCommand}" CommandParameter="{x:Static vm:DrawingTool.Pen}" />
-        <Button Content="Laser" Command="{Binding SelectToolCommand}" CommandParameter="{x:Static vm:DrawingTool.Fading}" />
-        <Button Content="Board" Command="{Binding CycleBoardCommand}" />
-        <Button Content="Save" Command="{Binding SaveLessonCommand}" />
-      </UniformGrid>
-      <StackPanel Visibility="{Binding IsExpanded, Converter={StaticResource BoolVisibility}}">
-        <UniformGrid Rows="1" Columns="4">
-          <Button Content="New" Command="{Binding NewLessonCommand}" ToolTip="New lesson · Ctrl + N when toolbar is focused" />
-          <Button Content="Open" Command="{Binding OpenLessonCommand}" ToolTip="Open .sketchora lesson" />
-          <Button Content="Save" Command="{Binding SaveLessonCommand}" ToolTip="Save editable lesson" />
-          <Button Content="Save as" Command="{Binding SaveLessonAsCommand}" />
-        </UniformGrid>
-        <TextBlock Text="DRAWING TOOLS" Foreground="#8793B2" FontSize="10" FontWeight="Bold" Margin="5,9,0,4" />
-        <WrapPanel>
-          <RadioButton Style="{StaticResource Tool}" Content="Pen" GroupName="Tools" Command="{Binding SelectToolCommand}"
-              CommandParameter="{x:Static vm:DrawingTool.Pen}" IsChecked="{Binding Tool, Mode=OneWay, Converter={StaticResource Equals}, ConverterParameter={x:Static vm:DrawingTool.Pen}}" ToolTip="Freehand pen" />
-          <RadioButton Style="{StaticResource Tool}" Content="Highlight" GroupName="Tools" Command="{Binding SelectToolCommand}"
-              CommandParameter="{x:Static vm:DrawingTool.Highlighter}" IsChecked="{Binding Tool, Mode=OneWay, Converter={StaticResource Equals}, ConverterParameter={x:Static vm:DrawingTool.Highlighter}}" ToolTip="Translucent highlighter" />
-          <RadioButton Style="{StaticResource Tool}" Content="Eraser" GroupName="Tools" Command="{Binding SelectToolCommand}"
-              CommandParameter="{x:Static vm:DrawingTool.Eraser}" IsChecked="{Binding Tool, Mode=OneWay, Converter={StaticResource Equals}, ConverterParameter={x:Static vm:DrawingTool.Eraser}}" ToolTip="Erase a whole stroke or shape" />
-          <RadioButton Style="{StaticResource Tool}" Content="Line" GroupName="Tools" Command="{Binding SelectToolCommand}"
-              CommandParameter="{x:Static vm:DrawingTool.Line}" IsChecked="{Binding Tool, Mode=OneWay, Converter={StaticResource Equals}, ConverterParameter={x:Static vm:DrawingTool.Line}}" />
-          <RadioButton Style="{StaticResource Tool}" Content="Arrow" GroupName="Tools" Command="{Binding SelectToolCommand}"
-              CommandParameter="{x:Static vm:DrawingTool.Arrow}" IsChecked="{Binding Tool, Mode=OneWay, Converter={StaticResource Equals}, ConverterParameter={x:Static vm:DrawingTool.Arrow}}" />
-          <RadioButton Style="{StaticResource Tool}" Content="Box" GroupName="Tools" Command="{Binding SelectToolCommand}"
-              CommandParameter="{x:Static vm:DrawingTool.Rectangle}" IsChecked="{Binding Tool, Mode=OneWay, Converter={StaticResource Equals}, ConverterParameter={x:Static vm:DrawingTool.Rectangle}}" />
-          <RadioButton Style="{StaticResource Tool}" Content="Oval" GroupName="Tools" Command="{Binding SelectToolCommand}"
-              CommandParameter="{x:Static vm:DrawingTool.Ellipse}" IsChecked="{Binding Tool, Mode=OneWay, Converter={StaticResource Equals}, ConverterParameter={x:Static vm:DrawingTool.Ellipse}}" />
-          <RadioButton Style="{StaticResource Tool}" Content="Text" GroupName="Tools" Command="{Binding SelectToolCommand}"
-              CommandParameter="{x:Static vm:DrawingTool.Text}" IsChecked="{Binding Tool, Mode=OneWay, Converter={StaticResource Equals}, ConverterParameter={x:Static vm:DrawingTool.Text}}" ToolTip="Click canvas to add text; drag labels to move; double-click to edit" />
-          <RadioButton Style="{StaticResource Tool}" Content="Fading" GroupName="Tools" Command="{Binding SelectToolCommand}"
-              CommandParameter="{x:Static vm:DrawingTool.Fading}" IsChecked="{Binding Tool, Mode=OneWay, Converter={StaticResource Equals}, ConverterParameter={x:Static vm:DrawingTool.Fading}}" ToolTip="Temporary laser strokes; excluded from lessons and PNG exports" />
-        </WrapPanel>
-        <StackPanel Orientation="Horizontal" Margin="5,6">
-          <TextBlock Text="Fade after" VerticalAlignment="Center" Margin="0,0,8,0" />
-          <ComboBox ItemsSource="{Binding FadeDurations}" SelectedItem="{Binding FadeSeconds}" Width="52" Foreground="#171B29" AutomationProperties.Name="Temporary ink lifetime in seconds" />
-          <TextBlock Text=" seconds" VerticalAlignment="Center" />
-          <Button Content="Clear laser" Command="{Binding ClearTemporaryCommand}" Padding="6,4" MinHeight="32" />
-        </StackPanel>
-        <TextBlock Text="COLOR &amp; WIDTH" Foreground="#8793B2" FontSize="10" FontWeight="Bold" Margin="5,13,0,4" />
-        <ItemsControl ItemsSource="{Binding Colors}">
-          <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="8" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-          <ItemsControl.ItemTemplate><DataTemplate>
-            <Button Background="{Binding}" Command="{Binding DataContext.SelectColorCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                CommandParameter="{Binding}" ToolTip="{Binding}" AutomationProperties.Name="{Binding}" Padding="0" MinHeight="32" />
-          </DataTemplate></ItemsControl.ItemTemplate>
-        </ItemsControl>
-        <Button Content="Custom colour…" Command="{Binding CustomColorCommand}" />
-        <Grid Margin="5,8">
-          <Grid.ColumnDefinitions><ColumnDefinition Width="26" /><ColumnDefinition /><ColumnDefinition Width="46" /></Grid.ColumnDefinitions>
-          <Border Width="18" Height="18" Background="{Binding Color}" CornerRadius="9" BorderBrush="#8793B2" BorderThickness="1" />
-          <Slider Grid.Column="1" Minimum="1" Maximum="20" TickFrequency="1" IsSnapToTickEnabled="True"
-              Value="{Binding Thickness}" VerticalAlignment="Center" AutomationProperties.Name="Ink width" />
-          <TextBlock Grid.Column="2" Text="{Binding Thickness, StringFormat={}{0:0} px}" HorizontalAlignment="Right" VerticalAlignment="Center" />
-        </Grid>
-        <TextBlock Text="{Binding PageLabel}" TextWrapping="Wrap" Foreground="#A7B1C9" FontSize="11" Margin="5,8,5,4" />
-        <UniformGrid Rows="1" Columns="3">
-          <Button Content="Previous" Command="{Binding PreviousPageCommand}" />
-          <Button Content="Next" Command="{Binding NextPageCommand}" />
-          <Button Content="Add page" Command="{Binding AddPageCommand}" />
-        </UniformGrid>
-        <UniformGrid Rows="1" Columns="4">
-          <Button Content="Rename" Command="{Binding RenamePageCommand}" Padding="5,8" />
-          <Button Content="Copy" Command="{Binding DuplicatePageCommand}" />
-          <Button Content="Delete" Command="{Binding DeletePageCommand}" />
-          <Button Content="Restore" Command="{Binding RestorePageCommand}" ToolTip="Restore the last deleted board" />
-        </UniformGrid>
-        <Button Content="{Binding BoardLabel}" Command="{Binding CycleBoardCommand}" ToolTip="Switch between desktop and the selected board page" />
-        <Button Content="White / black page background" Command="{Binding ToggleBackgroundCommand}" />
-        <WrapPanel>
-          <CheckBox Content="Show ink" IsChecked="{Binding ShowInk}" />
-          <CheckBox Content="Pointer halo" IsChecked="{Binding HaloEnabled}" />
-          <CheckBox Content="Touch drawing" IsChecked="{Binding TouchEnabled}" />
-          <CheckBox Content="Pen pressure" IsChecked="{Binding PressureEnabled}" />
-          <CheckBox Content="Ignore touch near pen" IsChecked="{Binding PalmRejection}" />
-        </WrapPanel>
-        <UniformGrid Rows="1" Columns="3">
-          <Button Content="Undo" Command="{Binding UndoCommand}" ToolTip="Ctrl + Z when toolbar is focused" />
-          <Button Content="Redo" Command="{Binding RedoCommand}" ToolTip="Ctrl + Y when toolbar is focused" />
-          <Button Content="Clear" Command="{Binding ClearCommand}" ToolTip="Clear active canvas; undo is available" />
-        </UniformGrid>
-        <Button Content="Save PNG" Command="{Binding ExportCommand}" ToolTip="Save all displays with annotations; toolbar is omitted" />
-        <UniformGrid Columns="2">
-          <Button Content="Copy screenshot" Command="{Binding CopyScreenshotCommand}" />
-          <Button Content="Capture region…" Command="{Binding RegionScreenshotCommand}" />
-        </UniformGrid>
-        <Button Content="Ghost Mode" Command="{Binding GhostCommand}" ToolTip="Hide toolbar and keep drawing. Ctrl+Alt+G restores it by default; the tray always recovers it." />
-        <Separator Background="#3A435B" Margin="4,10" />
-        <TextBlock Text="{Binding Notice}" TextWrapping="Wrap" Foreground="#A7B1C9" FontSize="11" Margin="5,0,5,8" />
-        <TextBlock Text="{Binding ShortcutHint}" Foreground="#8793B2" FontSize="11" Margin="5,0,5,8" />
-        <Button Content="Shortcut settings" Command="{Binding SettingsCommand}" />
-        <UniformGrid Rows="1" Columns="2">
-          <Button Content="Hide all" Command="{Binding HideCommand}" />
-          <Button Content="Quit" Command="{Binding ExitCommand}" />
-        </UniformGrid>
-      </StackPanel>
-    </StackPanel>
-    </ScrollViewer>
+      </ScrollViewer>
+      <Border Grid.Column="1" x:Name="DetailsPanel" Visibility="{Binding IsExpanded, Converter={StaticResource BoolVisibility}}" BorderBrush="#2B3A50" BorderThickness="1,0,0,0" Margin="8,0,0,0" Padding="12,4,4,4">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+          <StackPanel>
+            <TextBlock Text="Sketchora" FontSize="18" FontWeight="SemiBold" Margin="3,0,0,3"/>
+            <TextBlock Text="{Binding LessonLabel}" Foreground="#91A5BF" TextTrimming="CharacterEllipsis" ToolTip="{Binding LessonLabel}" Margin="3,0,0,4"/>
+            <TextBlock Text="LESSON" Style="{StaticResource Section}"/>
+            <UniformGrid Columns="2">
+              <Button x:Name="NewLessonButton" Tag="NewLesson" AutomationProperties.Name="New" Command="{Binding NewLessonCommand}">
+                <Button.ToolTip>
+                  <MultiBinding Converter="{StaticResource ShortcutTip}" ConverterParameter="NewLesson|New|Ctrl + N">
+                    <Binding/>
+                    <Binding Path="ShortcutRevision"/>
+                  </MultiBinding>
+                </Button.ToolTip>
+                <StackPanel Orientation="Horizontal">
+                  <icons:GlyphIcon Kind="New" Width="20" Height="20"/>
+                  <TextBlock Text="New" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                </StackPanel>
+              </Button>
+              <Button x:Name="OpenLessonButton" Tag="OpenLesson" AutomationProperties.Name="Open" Command="{Binding OpenLessonCommand}">
+                <Button.ToolTip>
+                  <MultiBinding Converter="{StaticResource ShortcutTip}" ConverterParameter="OpenLesson|Open|Ctrl + O">
+                    <Binding/>
+                    <Binding Path="ShortcutRevision"/>
+                  </MultiBinding>
+                </Button.ToolTip>
+                <StackPanel Orientation="Horizontal">
+                  <icons:GlyphIcon Kind="Open" Width="20" Height="20"/>
+                  <TextBlock Text="Open" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                </StackPanel>
+              </Button>
+              <Button x:Name="SaveLessonButton" Tag="SaveLesson" AutomationProperties.Name="Save" Command="{Binding SaveLessonCommand}">
+                <Button.ToolTip>
+                  <MultiBinding Converter="{StaticResource ShortcutTip}" ConverterParameter="SaveLesson|Save|Ctrl + S">
+                    <Binding/>
+                    <Binding Path="ShortcutRevision"/>
+                  </MultiBinding>
+                </Button.ToolTip>
+                <StackPanel Orientation="Horizontal">
+                  <icons:GlyphIcon Kind="Save" Width="20" Height="20"/>
+                  <TextBlock Text="Save" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                </StackPanel>
+              </Button>
+              <Button x:Name="SaveAsButton" Tag="SaveLessonAs" AutomationProperties.Name="Save as" Command="{Binding SaveLessonAsCommand}">
+                <Button.ToolTip>
+                  <MultiBinding Converter="{StaticResource ShortcutTip}" ConverterParameter="SaveLessonAs|Save as|Ctrl + Shift + S">
+                    <Binding/>
+                    <Binding Path="ShortcutRevision"/>
+                  </MultiBinding>
+                </Button.ToolTip>
+                <TextBlock Text="Save as"/>
+              </Button>
+            </UniformGrid>
+            <TextBlock Text="BOARD PAGES" Style="{StaticResource Section}"/>
+            <TextBlock Text="{Binding PageLabel}" Foreground="#B4C5DB" TextWrapping="Wrap" Margin="3,2,3,6"/>
+            <UniformGrid Columns="3">
+              <Button x:Name="PreviousPageButton" Tag="PreviousPage" AutomationProperties.Name="Previous" Command="{Binding PreviousPageCommand}">
+                <Button.ToolTip>
+                  <MultiBinding Converter="{StaticResource ShortcutTip}" ConverterParameter="PreviousPage|Previous">
+                    <Binding/>
+                    <Binding Path="ShortcutRevision"/>
+                  </MultiBinding>
+                </Button.ToolTip>
+                <StackPanel Orientation="Horizontal">
+                  <icons:GlyphIcon Kind="Previous" Width="20" Height="20"/>
+                  <TextBlock Text="Previous" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                </StackPanel>
+              </Button>
+              <Button x:Name="NextPageButton" Tag="NextPage" AutomationProperties.Name="Next" Command="{Binding NextPageCommand}">
+                <Button.ToolTip>
+                  <MultiBinding Converter="{StaticResource ShortcutTip}" ConverterParameter="NextPage|Next">
+                    <Binding/>
+                    <Binding Path="ShortcutRevision"/>
+                  </MultiBinding>
+                </Button.ToolTip>
+                <StackPanel Orientation="Horizontal">
+                  <icons:GlyphIcon Kind="Next" Width="20" Height="20"/>
+                  <TextBlock Text="Next" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                </StackPanel>
+              </Button>
+              <Button x:Name="AddPageButton" Tag="AddPage" AutomationProperties.Name="Add" Command="{Binding AddPageCommand}">
+                <Button.ToolTip>
+                  <MultiBinding Converter="{StaticResource ShortcutTip}" ConverterParameter="AddPage|Add">
+                    <Binding/>
+                    <Binding Path="ShortcutRevision"/>
+                  </MultiBinding>
+                </Button.ToolTip>
+                <StackPanel Orientation="Horizontal">
+                  <icons:GlyphIcon Kind="New" Width="20" Height="20"/>
+                  <TextBlock Text="Add" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                </StackPanel>
+              </Button>
+            </UniformGrid>
+            <UniformGrid Columns="2">
+              <Button x:Name="RenamePageButton" Tag="RenamePage" AutomationProperties.Name="Rename" Command="{Binding RenamePageCommand}">
+                <Button.ToolTip>
+                  <MultiBinding Converter="{StaticResource ShortcutTip}" ConverterParameter="RenamePage|Rename">
+                    <Binding/>
+                    <Binding Path="ShortcutRevision"/>
+                  </MultiBinding>
+                </Button.ToolTip>
+                <TextBlock Text="Rename"/>
+              </Button>
+              <Button x:Name="DuplicatePageButton" Tag="DuplicatePage" AutomationProperties.Name="Duplicate" Command="{Binding DuplicatePageCommand}">
+                <Button.ToolTip>
+                  <MultiBinding Converter="{StaticResource ShortcutTip}" ConverterParameter="DuplicatePage|Duplicate">
+                    <Binding/>
+                    <Binding Path="ShortcutRevision"/>
+                  </MultiBinding>
+                </Button.ToolTip>
+                <TextBlock Text="Duplicate"/>
+              </Button>
+              <Button x:Name="DeletePageButton" Tag="DeletePage" AutomationProperties.Name="Delete page" Command="{Binding DeletePageCommand}">
+                <Button.ToolTip>
+                  <MultiBinding Converter="{StaticResource ShortcutTip}" ConverterParameter="DeletePage|Delete page">
+                    <Binding/>
+                    <Binding Path="ShortcutRevision"/>
+                  </MultiBinding>
+                </Button.ToolTip>
+                <TextBlock Text="Delete page"/>
+              </Button>
+              <Button x:Name="RestorePageButton" Tag="RestorePage" AutomationProperties.Name="Restore" Command="{Binding RestorePageCommand}">
+                <Button.ToolTip>
+                  <MultiBinding Converter="{StaticResource ShortcutTip}" ConverterParameter="RestorePage|Restore">
+                    <Binding/>
+                    <Binding Path="ShortcutRevision"/>
+                  </MultiBinding>
+                </Button.ToolTip>
+                <TextBlock Text="Restore"/>
+              </Button>
+            </UniformGrid>
+            <Button x:Name="BackgroundButton" Tag="ToggleBackground" AutomationProperties.Name="White / black page" Command="{Binding ToggleBackgroundCommand}">
+              <Button.ToolTip>
+                <MultiBinding Converter="{StaticResource ShortcutTip}" ConverterParameter="ToggleBackground|White / black page">
+                  <Binding/>
+                  <Binding Path="ShortcutRevision"/>
+                </MultiBinding>
+              </Button.ToolTip>
+              <TextBlock Text="White / black page"/>
+            </Button>
+            <TextBlock Text="INPUT &amp; POINTER" Style="{StaticResource Section}"/>
+            <CheckBox Content="Pointer halo" IsChecked="{Binding HaloEnabled}">
+              <CheckBox.ToolTip>
+                <MultiBinding Converter="{StaticResource ShortcutTip}" ConverterParameter="ToggleHalo|Pointer halo">
+                  <Binding/>
+                  <Binding Path="ShortcutRevision"/>
+                </MultiBinding>
+              </CheckBox.ToolTip>
+            </CheckBox>
+            <CheckBox Content="Touch drawing" IsChecked="{Binding TouchEnabled}">
+              <CheckBox.ToolTip>
+                <MultiBinding Converter="{StaticResource ShortcutTip}" ConverterParameter="ToggleTouch|Touch drawing">
+                  <Binding/>
+                  <Binding Path="ShortcutRevision"/>
+                </MultiBinding>
+              </CheckBox.ToolTip>
+            </CheckBox>
+            <CheckBox Content="Pen pressure" IsChecked="{Binding PressureEnabled}">
+              <CheckBox.ToolTip>
+                <MultiBinding Converter="{StaticResource ShortcutTip}" ConverterParameter="TogglePressure|Pen pressure">
+                  <Binding/>
+                  <Binding Path="ShortcutRevision"/>
+                </MultiBinding>
+              </CheckBox.ToolTip>
+            </CheckBox>
+            <CheckBox Content="Ignore touch near pen" IsChecked="{Binding PalmRejection}">
+              <CheckBox.ToolTip>
+                <MultiBinding Converter="{StaticResource ShortcutTip}" ConverterParameter="TogglePalm|Ignore touch near pen">
+                  <Binding/>
+                  <Binding Path="ShortcutRevision"/>
+                </MultiBinding>
+              </CheckBox.ToolTip>
+            </CheckBox>
+            <TextBlock Text="FADING INK" Style="{StaticResource Section}"/>
+            <StackPanel Orientation="Horizontal" Margin="3,2">
+              <TextBlock Text="Fade after" VerticalAlignment="Center" Margin="0,0,8,0"/>
+              <ComboBox ItemsSource="{Binding FadeDurations}" SelectedItem="{Binding FadeSeconds}" Width="48" Foreground="#172235" AutomationProperties.Name="Fading ink lifetime in seconds" ToolTip="Fading ink lifetime in seconds"/>
+              <TextBlock Text=" seconds" VerticalAlignment="Center"/>
+            </StackPanel>
+            <Button x:Name="ClearLaserButton" Tag="ClearTemporary" AutomationProperties.Name="Clear fading ink" Command="{Binding ClearTemporaryCommand}">
+              <Button.ToolTip>
+                <MultiBinding Converter="{StaticResource ShortcutTip}" ConverterParameter="ClearTemporary|Clear fading ink">
+                  <Binding/>
+                  <Binding Path="ShortcutRevision"/>
+                </MultiBinding>
+              </Button.ToolTip>
+              <TextBlock Text="Clear fading ink"/>
+            </Button>
+            <Separator/>
+            <Button x:Name="GhostButton" Tag="Ghost" AutomationProperties.Name="Ghost Mode" Command="{Binding GhostCommand}">
+              <Button.ToolTip>
+                <MultiBinding Converter="{StaticResource ShortcutTip}" ConverterParameter="Ghost|Ghost Mode">
+                  <Binding/>
+                  <Binding Path="ShortcutRevision"/>
+                </MultiBinding>
+              </Button.ToolTip>
+              <StackPanel Orientation="Horizontal">
+                <icons:GlyphIcon Kind="Ghost" Width="20" Height="20"/>
+                <TextBlock Text="Ghost Mode" Margin="8,0,0,0" VerticalAlignment="Center"/>
+              </StackPanel>
+            </Button>
+            <Button x:Name="SettingsButton" Tag="Settings" AutomationProperties.Name="Shortcut settings" Command="{Binding SettingsCommand}">
+              <Button.ToolTip>
+                <MultiBinding Converter="{StaticResource ShortcutTip}" ConverterParameter="Settings|Shortcut settings">
+                  <Binding/>
+                  <Binding Path="ShortcutRevision"/>
+                </MultiBinding>
+              </Button.ToolTip>
+              <StackPanel Orientation="Horizontal">
+                <icons:GlyphIcon Kind="Settings" Width="20" Height="20"/>
+                <TextBlock Text="Shortcut settings" Margin="8,0,0,0" VerticalAlignment="Center"/>
+              </StackPanel>
+            </Button>
+            <TextBlock Text="{Binding Notice}" TextWrapping="Wrap" Foreground="#8195AF" FontSize="11" Margin="3,9,3,6"/>
+            <UniformGrid Columns="2">
+              <Button x:Name="HideButton" Tag="Hide" AutomationProperties.Name="Hide all" Command="{Binding HideCommand}">
+                <Button.ToolTip>
+                  <MultiBinding Converter="{StaticResource ShortcutTip}" ConverterParameter="Hide|Hide all">
+                    <Binding/>
+                    <Binding Path="ShortcutRevision"/>
+                  </MultiBinding>
+                </Button.ToolTip>
+                <StackPanel Orientation="Horizontal">
+                  <icons:GlyphIcon Kind="Hide" Width="20" Height="20"/>
+                  <TextBlock Text="Hide all" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                </StackPanel>
+              </Button>
+              <Button x:Name="QuitButton" Tag="Exit" AutomationProperties.Name="Quit" Command="{Binding ExitCommand}">
+                <Button.ToolTip>
+                  <MultiBinding Converter="{StaticResource ShortcutTip}" ConverterParameter="Exit|Quit">
+                    <Binding/>
+                    <Binding Path="ShortcutRevision"/>
+                  </MultiBinding>
+                </Button.ToolTip>
+                <StackPanel Orientation="Horizontal">
+                  <icons:GlyphIcon Kind="Quit" Width="20" Height="20"/>
+                  <TextBlock Text="Quit" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                </StackPanel>
+              </Button>
+            </UniformGrid>
+          </StackPanel>
+        </ScrollViewer>
+      </Border>
+    </Grid>
   </Border>
 </Window>

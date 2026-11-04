@@ -10,7 +10,7 @@ public sealed record AppPreferences
     public double? ToolbarTop { get; init; }
     public char DrawShortcut { get; init; } = 'D';
     public char HideShortcut { get; init; } = 'H';
-    public bool ExpandedToolbar { get; init; } = true;
+    public bool ExpandedToolbar { get; init; } = false;
     public int FadeSeconds { get; init; } = 3;
     public double TextSize { get; init; } = 24;
     public bool PressureEnabled { get; init; } = true;

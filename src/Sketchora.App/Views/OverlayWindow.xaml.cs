@@ -181,11 +181,11 @@ public partial class OverlayWindow : Window
             Color = color, Width = _model.Tool == DrawingTool.Highlighter ? _model.Thickness * 4 : _model.Thickness,
             Height = _model.Tool == DrawingTool.Highlighter ? _model.Thickness * 4 : _model.Thickness,
             IsHighlighter = _model.Tool == DrawingTool.Highlighter, IgnorePressure = !_model.PressureEnabled || _model.Tool == DrawingTool.Highlighter,
-            FitToCurve = true
+            FitToCurve = false
         };
         TemporarySurface.DefaultDrawingAttributes = new DrawingAttributes
         {
-            Color = color, Width = _model.Thickness, Height = _model.Thickness, IgnorePressure = true, FitToCurve = true
+            Color = color, Width = _model.Thickness, Height = _model.Thickness, IgnorePressure = true, FitToCurve = false
         };
         InkSurface.EditingMode = !drawing || _touchStrokes.Count > 0 || IsShapeTool || _model.Tool is DrawingTool.Text or DrawingTool.Fading
             ? InkCanvasEditingMode.None : _model.Tool == DrawingTool.Eraser ? InkCanvasEditingMode.EraseByStroke : InkCanvasEditingMode.Ink;

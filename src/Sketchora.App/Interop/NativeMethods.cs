@@ -69,6 +69,20 @@ internal static class NativeMethods
 
     [DllImport("user32.dll")]
     private static extern int GetSystemMetrics(int index);
+    [DllImport("user32.dll")]
+    private static extern nint MonitorFromWindow(nint hwnd, uint flags);
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetWindowRect(nint hwnd, out Rect rect);
+    internal static void ConstrainToolbar(nint hwnd)
+    {
+        var info = new MonitorInfo { Size = Marshal.SizeOf<MonitorInfo>() };
+        if (!GetWindowRect(hwnd, out var window) || !GetMonitorInfo(MonitorFromWindow(hwnd, 2), ref info)) return;
+        var x = Math.Clamp(window.Left, info.Work.Left, Math.Max(info.Work.Left, info.Work.Right - window.Width));
+        var y = Math.Clamp(window.Top, info.Work.Top, Math.Max(info.Work.Top, info.Work.Bottom - window.Height));
+        if (x != window.Left || y != window.Top)
+            SetWindowPos(hwnd, 0, x, y, 0, 0, 0x1 | 0x4 | SwpNoActivate);
+    }
     internal static Rect DesktopBounds()
     {
         var left = GetSystemMetrics(76); var top = GetSystemMetrics(77);
