@@ -55,6 +55,10 @@ public sealed class ToolbarAndInkTests
             Assert.Equal(actions.Length, actions.Select(button => button.Tag).Distinct().Count());
             model.CollapseCommand.Execute(null); Pump(); toolbar.UpdateLayout();
             Assert.True(model.IsExpanded); Assert.Equal(344, toolbar.Width); Assert.Equal(Visibility.Visible, details.Visibility);
+            var scroll = (ScrollViewer)((Border)details).Child;
+            toolbar.UpdateLayout(); Assert.True(scroll.ScrollableHeight > 0);
+            scroll.ScrollToBottom(); Pump(); Assert.True(scroll.VerticalOffset > 0);
+            scroll.ScrollToTop(); Pump();
             model.CollapseCommand.Execute(null); Pump(); Assert.Equal(60, toolbar.Width);
         }
         finally { toolbar.Close(); }

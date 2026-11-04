@@ -1,14 +1,4 @@
-<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="clr-namespace:Sketchora.App.ViewModels" xmlns:icons="clr-namespace:Sketchora.App.Controls" xmlns:converters="clr-namespace:Sketchora.App.Converters" xmlns:primitives="clr-namespace:System.Windows.Controls.Primitives;assembly=PresentationFramework" x:Class="Sketchora.App.Views.ToolbarWindow" Title="Sketchora" Icon="/Sketchora;component/Assets/Sketchora.ico" SizeToContent="Height" WindowStyle="None" ResizeMode="NoResize" AllowsTransparency="True" Background="Transparent" Topmost="True" ShowInTaskbar="False" UseLayoutRounding="True" FontFamily="Segoe UI" FontSize="12" Foreground="#E5EDF9">
-  <Window.Style>
-    <Style TargetType="Window">
-      <Setter Property="Width" Value="60"/>
-      <Style.Triggers>
-        <DataTrigger Binding="{Binding IsExpanded}" Value="True">
-          <Setter Property="Width" Value="344"/>
-        </DataTrigger>
-      </Style.Triggers>
-    </Style>
-  </Window.Style>
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="clr-namespace:Sketchora.App.ViewModels" xmlns:icons="clr-namespace:Sketchora.App.Controls" xmlns:converters="clr-namespace:Sketchora.App.Converters" xmlns:primitives="clr-namespace:System.Windows.Controls.Primitives;assembly=PresentationFramework" x:Class="Sketchora.App.Views.ToolbarWindow" Title="Sketchora" Icon="/Sketchora;component/Assets/Sketchora.ico" Width="60" SizeToContent="Height" WindowStyle="None" ResizeMode="NoResize" AllowsTransparency="True" Background="Transparent" Topmost="True" ShowInTaskbar="False" UseLayoutRounding="True" FontFamily="Segoe UI" FontSize="12" Foreground="#E5EDF9">
   <Window.Resources>
     <BooleanToVisibilityConverter x:Key="BoolVisibility"/>
     <converters:EqualsConverter x:Key="Equals"/>
@@ -118,9 +108,48 @@
       <Setter Property="FontWeight" Value="SemiBold"/>
       <Setter Property="Margin" Value="3,14,0,6"/>
     </Style>
-    <Style TargetType="ScrollBar">
+    <Style x:Key="SlimScrollBar" TargetType="ScrollBar">
       <Setter Property="Width" Value="4"/>
       <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="ScrollBar">
+            <Track x:Name="PART_Track" IsDirectionReversed="True" Orientation="Vertical" Minimum="{TemplateBinding Minimum}" Maximum="{TemplateBinding Maximum}" Value="{Binding Value, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}" ViewportSize="{TemplateBinding ViewportSize}">
+              <Track.DecreaseRepeatButton>
+                <RepeatButton Command="{x:Static ScrollBar.PageUpCommand}" Opacity="0" Focusable="False"/>
+              </Track.DecreaseRepeatButton>
+              <Track.Thumb>
+                <Thumb MinHeight="24">
+                  <Thumb.Template>
+                    <ControlTemplate TargetType="Thumb">
+                      <Border Background="#4A617F" CornerRadius="2"/>
+                    </ControlTemplate>
+                  </Thumb.Template>
+                </Thumb>
+              </Track.Thumb>
+              <Track.IncreaseRepeatButton>
+                <RepeatButton Command="{x:Static ScrollBar.PageDownCommand}" Opacity="0" Focusable="False"/>
+              </Track.IncreaseRepeatButton>
+            </Track>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+    <Style TargetType="ScrollViewer">
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="ScrollViewer">
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+              </Grid.ColumnDefinitions>
+              <ScrollContentPresenter x:Name="PART_ScrollContentPresenter" Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}" CanContentScroll="{TemplateBinding CanContentScroll}"/>
+              <ScrollBar x:Name="PART_VerticalScrollBar" Grid.Column="1" Style="{StaticResource SlimScrollBar}" Orientation="Vertical" Maximum="{TemplateBinding ScrollableHeight}" ViewportSize="{TemplateBinding ViewportHeight}" Value="{TemplateBinding VerticalOffset}" Visibility="{TemplateBinding ComputedVerticalScrollBarVisibility}"/>
+            </Grid>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
     </Style>
     <Style x:Key="Flyout" TargetType="Border">
       <Setter Property="Background" Value="#172235"/>
@@ -492,7 +521,6 @@
                 </Button.ToolTip>
                 <StackPanel Orientation="Horizontal">
                   <icons:GlyphIcon Kind="Previous" Width="20" Height="20"/>
-                  <TextBlock Text="Previous" Margin="8,0,0,0" VerticalAlignment="Center"/>
                 </StackPanel>
               </Button>
               <Button x:Name="NextPageButton" Tag="NextPage" AutomationProperties.Name="Next" Command="{Binding NextPageCommand}">
@@ -504,7 +532,6 @@
                 </Button.ToolTip>
                 <StackPanel Orientation="Horizontal">
                   <icons:GlyphIcon Kind="Next" Width="20" Height="20"/>
-                  <TextBlock Text="Next" Margin="8,0,0,0" VerticalAlignment="Center"/>
                 </StackPanel>
               </Button>
               <Button x:Name="AddPageButton" Tag="AddPage" AutomationProperties.Name="Add" Command="{Binding AddPageCommand}">

@@ -46,7 +46,13 @@ public partial class ToolbarWindow : Window
     }
     private void OnModelChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(ToolbarViewModel.IsExpanded)) CloseFlyouts();
+        if (e.PropertyName == nameof(ToolbarViewModel.IsExpanded))
+        {
+            CloseFlyouts();
+            // Native window sizing can establish a local Width after Show(), which
+            // takes precedence over a Style trigger. Apply both sizes explicitly.
+            Width = sender is ToolbarViewModel { IsExpanded: true } ? 344 : 60;
+        }
         if (e.PropertyName == nameof(ToolbarViewModel.IsBusy) && sender is ToolbarViewModel { IsBusy: true }) CloseFlyouts();
     }
     private void CloseFlyouts() => ToolPopup.IsOpen = ColourPopup.IsOpen = CapturePopup.IsOpen = false;
