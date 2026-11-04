@@ -65,3 +65,16 @@ See WINDOWS-CHECKLIST.md for the manual release gate. A successful cross-build d
 - [Download the Windows preview](https://github.com/Nyi-Nyi-Zin/Sketchora/actions/runs/41805713686/artifacts/13309618067).
 - The first V3 Windows run exposed a canvas-initialization bug: committing the first finger stroke could cancel another pending stroke when no canvas identity had been rendered yet. The constructor now synchronizes the initial canvas before input; the existing concurrent-stroke/independent-undo regression test passes without weakening its assertions.
 - This verifies automated WPF/software behavior and packaging. Physical hardware, mixed-DPI alignment, interactive Ghost/capture/IME workflows and receiver-side meeting checks remain pending in WINDOWS-CHECKLIST.md.
+
+
+## Compact toolbar / raw pen update — v0.3.1-preview.1
+
+- Verified code commit: `d9ee866972c846547280ee30389ed6a573743d72`.
+- [Windows CI run 41811137768](https://github.com/Nyi-Nyi-Zin/Sketchora/actions/runs/41811137768): successful.
+- Release build: **0 warnings / 0 errors**. Full suite: **53 core + 20 WPF adapter cases = 73 passed**, 0 failures, 0 skips.
+- Native window tests actually show the toolbar, open flyouts and pump the WPF dispatcher before checking bindings. They verify compact startup even with an old expanded preference, live expansion/collapse, unique actions, scrolling, four-DIP scrollbar width, remapped/unassigned shortcut tips and embedded icon loading.
+- New geometry cases preserve raw corners for pen/highlighter/finger strokes and history, with curve fitting disabled. These do not replace a physical pen-lift check on the user's hardware.
+- Compact and expanded WPF render outputs were retrieved from the test evidence and visually inspected; visible-UI pixel coverage is asserted by the render test.
+- Self-contained Windows x64 publish succeeded. Artifact `Sketchora-win-x64`: **71,420,950 bytes**, ID `13312676497`.
+- [Download the current preview](https://github.com/Nyi-Nyi-Zin/Sketchora/actions/runs/41811137768/artifacts/13312676497).
+- Actual device input, mixed-DPI/hot-plug behavior, IME and receiver-side meeting capture retain their manual checklist requirements.

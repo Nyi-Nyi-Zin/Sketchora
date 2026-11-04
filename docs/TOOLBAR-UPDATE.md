@@ -9,3 +9,6 @@ Requested from the user's three screenshots: stop stroke reshaping on release, r
 - Escape, collapsing settings, hiding the toolbar or entering a modal action closes flyouts.
 
 Validation: cross-build plus core tests locally; Windows adapters cover raw corners/history, compact upgrade defaults, duplicate action detection, remapped hover tips, embedded icon and real WPF renders of compact/expanded layouts. Physical pen lift and desktop interaction still need confirmation on the user's device.
+
+
+Windows verification completed: [run 41811137768](https://github.com/Nyi-Nyi-Zin/Sketchora/actions/runs/41811137768), all 73 cases passed with 0 build warnings/errors. The tests show the real toolbar window, exercise expansion/scrolling and save WPF render evidence. [Download v0.3.1](https://github.com/Nyi-Nyi-Zin/Sketchora/actions/runs/41811137768/artifacts/13312676497).

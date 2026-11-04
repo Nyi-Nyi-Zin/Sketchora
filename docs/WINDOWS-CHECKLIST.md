@@ -53,3 +53,11 @@ Do not claim Windows/pen/capture certification until these checks are completed 
 - [ ] Draw with two or more fingers at once; undo each completed stroke. Test touch off, page/tool changes mid-stroke, eraser, fading strokes and pressure from an active pen.
 - [ ] With an active pen in range, verify pending finger ink is cancelled and palm contact is suppressed; verify touch resumes after leaving range. A passive stylus has no proximity signal.
 - [ ] Verify Burmese IME labels and receiver-side Zoom/Meet screen sharing/recording on each display.
+
+
+## v0.3.1 compact toolbar / pen follow-up
+
+- [ ] On an existing installation, launch and confirm the icon rail is the default; expand/collapse it and confirm it remains reachable near display edges.
+- [ ] Draw handwriting, tight corners and zigzags with the user's pen/mouse/finger; confirm the path stays in place after lift, Undo/Redo and Save/Open.
+- [ ] Hover rail, tool-menu and expanded actions. Remap a shortcut and confirm the displayed key updates; local Ctrl shortcuts must remain clearly labelled.
+- [ ] Check the custom icon in Explorer, the toolbar and system tray after extracting a fresh build (Explorer may cache older executable icons).
