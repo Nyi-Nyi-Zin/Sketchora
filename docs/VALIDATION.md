@@ -51,5 +51,17 @@ See WINDOWS-CHECKLIST.md for the manual release gate. A successful cross-build d
 - Windows adapter suite: 14 tests compiled, **not executed** on this Linux host. Eight new adapter tests cover the added tools/input/capture behavior.
 - Self-contained Windows x64 publish: succeeded. The portable package was cross-built; it has not been launched on Windows.
 - XAML/project XML parsing and `git diff --check`: passed.
-- The user explicitly approved pushing this update to `Nyi-Nyi-Zin/Sketchora`. Windows CI results will be recorded after the upload.
+- The user explicitly approved pushing this update to `Nyi-Nyi-Zin/Sketchora`. Windows CI results are recorded below.
 - Physical pen/multi-touch/proximity behavior, mixed-DPI and hot-plug alignment, Burmese IME, real region/clipboard interaction, Ghost Mode native recovery and receiver-side Zoom/Meet capture remain manual verification items. No claim of fully verified Epic Pen parity is made.
+
+
+## Version 3 Windows CI — 4 November 2026
+
+- Code commit: `16ab827ff5e45829a6c50454dedc161fd1ee2007`.
+- [GitHub Actions run 41805713686](https://github.com/Nyi-Nyi-Zin/Sketchora/actions/runs/41805713686): successful.
+- Windows Release build: **0 warnings / 0 errors**.
+- Full Windows suite: **53 core + 14 WPF adapter tests = 67 passed**, 0 failed, 0 skipped.
+- Self-contained Windows x64 publish and artifact upload succeeded. Artifact `Sketchora-win-x64`: 71,334,265 bytes, ID `13309618067`.
+- [Download the Windows preview](https://github.com/Nyi-Nyi-Zin/Sketchora/actions/runs/41805713686/artifacts/13309618067).
+- The first V3 Windows run exposed a canvas-initialization bug: committing the first finger stroke could cancel another pending stroke when no canvas identity had been rendered yet. The constructor now synchronizes the initial canvas before input; the existing concurrent-stroke/independent-undo regression test passes without weakening its assertions.
+- This verifies automated WPF/software behavior and packaging. Physical hardware, mixed-DPI alignment, interactive Ghost/capture/IME workflows and receiver-side meeting checks remain pending in WINDOWS-CHECKLIST.md.

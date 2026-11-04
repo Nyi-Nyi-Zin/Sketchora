@@ -6,7 +6,9 @@ A Windows desktop app for annotating code, drawing sketches and explaining lesso
 
 ## Download or build
 
-**Version 3 preview:** use a successful Version 3 run of the Windows build below. The earlier V2 artifact does not contain these additions.
+**[Download Version 3 Windows preview](https://github.com/Nyi-Nyi-Zin/Sketchora/actions/runs/41805713686/artifacts/13309618067)** · [Passing Windows build and all 67 tests](https://github.com/Nyi-Nyi-Zin/Sketchora/actions/runs/41805713686)
+
+Includes the concurrent-touch fix. The earlier V2 artifact does not contain these additions.
 
 Open the latest successful run of [Build and test Sketchora](https://github.com/Nyi-Nyi-Zin/Sketchora/actions/workflows/build.yml), then download the **Sketchora-win-x64** artifact. GitHub may require sign-in. Extract the ZIP and open `Sketchora.exe`, keeping the extracted files together. It is a self-contained, unsigned Windows 11 x64 portable app, not an installer. Actions artifacts expire; use a current successful run.
 
