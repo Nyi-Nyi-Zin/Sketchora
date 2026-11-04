@@ -79,6 +79,10 @@ public partial class OverlayWindow : Window
             InkSurface.Strokes.StrokesChanged -= OnStrokesChanged;
             _source?.RemoveHook(WndProc);
         };
+        // Establish the rendered canvas identity before any input can commit.
+        // Otherwise the first stroke's Changed event looks like a page switch
+        // and cancels other concurrent finger strokes.
+        RefreshCanvas();
     }
 
     public bool SuspendHalo
