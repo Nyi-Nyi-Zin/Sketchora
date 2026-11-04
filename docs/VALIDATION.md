@@ -86,3 +86,7 @@ See WINDOWS-CHECKLIST.md for the manual release gate. A successful cross-build d
 - Core suite: **62 passed**, no failures or skips. New coverage checks old shortcut-map migration, transactional imports, preservation of cleared-board and desktop history, image/pattern undo and persistence, bounded image validation and valid/atomic PDF writing.
 - Windows adapter coverage added for selection edits, point erasing, ephemeral freeze, coordinate-preserving zoom/pan, worksheet fitting, real Windows PDF decoding/import, detached image import, malformed images, patterned rendering and spotlight exclusion. Native execution is recorded after Windows CI completes.
 - The app and WPF tests target Windows SDK 10.0.19041 for the built-in Windows PDF renderer. No PDF service/backend is used.
+
+- Code pushed to `main`: `38807e53cf68535afb39987428f4d015930a2643`.
+- Local self-contained Windows x64 single-file publish: successful. This is cross-publishing, not native Windows execution.
+- [Windows CI run 41862842797](https://github.com/Nyi-Nyi-Zin/Sketchora/actions/runs/41862842797) is queued for a Windows runner as of this record. Native WPF/PDF tests and the new downloadable Actions artifact are **pending**, not reported as passed.
