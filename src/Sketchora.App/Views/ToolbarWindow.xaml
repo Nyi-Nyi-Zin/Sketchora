@@ -109,7 +109,7 @@
       <Setter Property="Margin" Value="3,14,0,6"/>
     </Style>
     <Style x:Key="SlimScrollBar" TargetType="ScrollBar">
-      <Setter Property="Width" Value="4"/>
+      <Setter Property="Width" Value="4"/><Setter Property="MinWidth" Value="4"/><Setter Property="MaxWidth" Value="4"/>
       <Setter Property="Background" Value="Transparent"/>
       <Setter Property="Template">
         <Setter.Value>
@@ -119,7 +119,7 @@
                 <RepeatButton Command="{x:Static ScrollBar.PageUpCommand}" Opacity="0" Focusable="False"/>
               </Track.DecreaseRepeatButton>
               <Track.Thumb>
-                <Thumb MinHeight="24">
+                <Thumb MinHeight="24" Width="4" MinWidth="0" MaxWidth="4">
                   <Thumb.Template>
                     <ControlTemplate TargetType="Thumb">
                       <Border Background="#4A617F" CornerRadius="2"/>

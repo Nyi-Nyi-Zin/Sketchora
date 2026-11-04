@@ -57,6 +57,8 @@ public sealed class ToolbarAndInkTests
             Assert.True(model.IsExpanded); Assert.Equal(344, toolbar.Width); Assert.Equal(Visibility.Visible, details.Visibility);
             var scroll = (ScrollViewer)((Border)details).Child;
             toolbar.UpdateLayout(); Assert.True(scroll.ScrollableHeight > 0);
+            var bar = (ScrollBar)scroll.Template.FindName("PART_VerticalScrollBar", scroll);
+            Assert.InRange(bar.ActualWidth, 3.5, 4.5);
             scroll.ScrollToBottom(); Pump(); Assert.True(scroll.VerticalOffset > 0);
             scroll.ScrollToTop(); Pump();
             model.CollapseCommand.Execute(null); Pump(); Assert.Equal(60, toolbar.Width);
