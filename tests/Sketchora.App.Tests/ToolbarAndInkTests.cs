@@ -8,6 +8,7 @@ using System.Windows.Ink;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 using Sketchora.App.Services;
 using Sketchora.App.ViewModels;
 using Sketchora.App.Views;
@@ -26,6 +27,11 @@ public sealed class ToolbarAndInkTests
         Assert.True(thread.Join(TimeSpan.FromSeconds(20)), "Toolbar test timed out.");
         if (error is not null) ExceptionDispatchInfo.Capture(error).Throw();
     }
+    private static void Pump() => Dispatcher.CurrentDispatcher.Invoke(DispatcherPriority.ApplicationIdle, new Action(() => { }));
+    private static void Show(ToolbarWindow toolbar)
+    {
+        toolbar.MaxHeight = 660; toolbar.Show(); Pump(); toolbar.UpdateLayout();
+    }
     [Fact]
     public void UpgradeAlwaysStartsAsIconRailAndExpansionDoesNotDuplicateActions() => Sta(() =>
     {
@@ -33,18 +39,23 @@ public sealed class ToolbarAndInkTests
         var toolbar = new ToolbarWindow(model);
         try
         {
+            Show(toolbar);
             Assert.False(model.IsExpanded); Assert.Equal(60, toolbar.Width);
             var details = (FrameworkElement)toolbar.FindName("DetailsPanel");
             Assert.Equal(Visibility.Collapsed, details.Visibility);
+            foreach (var name in new[] { "ToolPopup", "ColourPopup", "CapturePopup" })
+            {
+                var popup = (Popup)toolbar.FindName(name); popup.IsOpen = true; Pump(); popup.IsOpen = false; Pump();
+            }
             var actions = Descendants(toolbar.Content as DependencyObject).OfType<ButtonBase>()
                 .Where(button => button.Command is not null && button.Tag is string).ToArray();
             Assert.Single(actions, button => button.Command == model.SaveLessonCommand);
             Assert.Single(actions, button => button.Command == model.CycleBoardCommand);
             Assert.Single(actions, button => button.Command == model.ExportCommand);
             Assert.Equal(actions.Length, actions.Select(button => button.Tag).Distinct().Count());
-            model.CollapseCommand.Execute(null); toolbar.UpdateLayout();
+            model.CollapseCommand.Execute(null); Pump(); toolbar.UpdateLayout();
             Assert.True(model.IsExpanded); Assert.Equal(344, toolbar.Width); Assert.Equal(Visibility.Visible, details.Visibility);
-            model.CollapseCommand.Execute(null); Assert.Equal(60, toolbar.Width);
+            model.CollapseCommand.Execute(null); Pump(); Assert.Equal(60, toolbar.Width);
         }
         finally { toolbar.Close(); }
     });
@@ -54,18 +65,25 @@ public sealed class ToolbarAndInkTests
         var model = new ToolbarViewModel(new AppPreferences(), _ => { }); var toolbar = new ToolbarWindow(model);
         try
         {
+            Show(toolbar);
+            var toolPopup = (Popup)toolbar.FindName("ToolPopup"); toolPopup.IsOpen = true; Pump();
             var pen = (Button)toolbar.FindName("PenChoice");
             var save = (Button)toolbar.FindName("SaveLessonButton");
             BindingOperations.GetMultiBindingExpression(pen, FrameworkElement.ToolTipProperty)?.UpdateTarget();
             Assert.Contains("Ctrl + Alt + P", pen.ToolTip.ToString());
             var keys = ShortcutCatalog.Defaults(); keys["Tool.Pen"] = 0x7B; // F12
-            model.UpdateShortcuts(keys);
+            model.UpdateShortcuts(keys); Pump();
             BindingOperations.GetMultiBindingExpression(pen, FrameworkElement.ToolTipProperty)?.UpdateTarget();
             Assert.Contains("Ctrl + Alt + F12", pen.ToolTip.ToString());
             Assert.Contains("F12", model.PrimaryToolTip);
-            keys["Tool.Pen"] = 0; model.UpdateShortcuts(keys);
+            keys["Tool.Pen"] = 0; model.UpdateShortcuts(keys); Pump();
             BindingOperations.GetMultiBindingExpression(pen, FrameworkElement.ToolTipProperty)?.UpdateTarget();
             Assert.Contains("not assigned", pen.ToolTip.ToString()); Assert.DoesNotContain("Ctrl + Alt + P", pen.ToolTip.ToString());
+            toolPopup.IsOpen = false; model.IsExpanded = true; Pump();
+            foreach (var name in new[] { "ColourPopup", "CapturePopup" })
+            {
+                var popup = (Popup)toolbar.FindName(name); popup.IsOpen = true; Pump(); popup.IsOpen = false; Pump();
+            }
             BindingOperations.GetMultiBindingExpression(save, FrameworkElement.ToolTipProperty)?.UpdateTarget();
             Assert.Contains("Ctrl + S (toolbar focused)", save.ToolTip.ToString());
             Assert.All(Descendants(toolbar.Content as DependencyObject).OfType<ButtonBase>()
@@ -127,10 +145,11 @@ public sealed class ToolbarAndInkTests
         try
         {
             Assert.NotNull(toolbar.Icon); Assert.True(toolbar.Icon.Width > 0);
+            Show(toolbar);
             var root = (FrameworkElement)toolbar.Content;
             foreach (var expanded in new[] { false, true })
             {
-                model.IsExpanded = expanded; toolbar.UpdateLayout();
+                model.IsExpanded = expanded; Pump(); toolbar.UpdateLayout();
                 var width = expanded ? 344 : 60;
                 root.Measure(new Size(width, 660));
                 var height = Math.Min(660, Math.Ceiling(root.DesiredSize.Height));
@@ -138,6 +157,8 @@ public sealed class ToolbarAndInkTests
                 Assert.True(root.ActualHeight > 300); Assert.InRange(root.ActualWidth, width - 1, width + 1);
                 var bitmap = new RenderTargetBitmap(width * 2, (int)height * 2, 192, 192, PixelFormats.Pbgra32);
                 bitmap.Render(root);
+                var pixels = new byte[bitmap.PixelWidth * bitmap.PixelHeight * 4]; bitmap.CopyPixels(pixels, bitmap.PixelWidth * 4, 0);
+                Assert.True(pixels.Where((_, index) => index % 4 == 3).Count(alpha => alpha > 0) > bitmap.PixelWidth * bitmap.PixelHeight / 2, "The toolbar render must contain real visible UI.");
                 var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(bitmap));
                 var directory = Path.Combine(AppContext.BaseDirectory, "TestResults"); Directory.CreateDirectory(directory);
                 using var file = File.Create(Path.Combine(directory, expanded ? "toolbar-expanded.png" : "toolbar-compact.png")); encoder.Save(file); file.Close();

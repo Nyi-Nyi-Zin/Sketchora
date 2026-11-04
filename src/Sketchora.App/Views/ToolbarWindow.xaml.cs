@@ -19,6 +19,8 @@ public partial class ToolbarWindow : Window
         // A Popup owns a separate presentation source; give its choices the same model
         // before opening so their commands and live shortcut tips are ready immediately.
         ToolPopup.DataContext = ColourPopup.DataContext = CapturePopup.DataContext = model;
+        foreach (var popup in new[] { ToolPopup, ColourPopup, CapturePopup })
+            if (popup.Child is FrameworkElement child) child.DataContext = model;
         MaxHeight = Math.Max(240, SystemParameters.WorkArea.Height - 16);
         model.PropertyChanged += OnModelChanged;
         SizeChanged += (_, _) => Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(KeepVisible));
