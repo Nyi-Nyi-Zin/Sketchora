@@ -6,9 +6,11 @@ A Windows desktop app for annotating code, drawing sketches and explaining lesso
 
 ## Download or build
 
-The v0.4.0 source is on `main`. [Windows validation and portable package](https://github.com/Nyi-Nyi-Zin/Sketchora/actions/runs/41862842797) is queued for a GitHub Windows runner; the new download is available only after that run succeeds. Local cross-build, 62 core tests and portable publish passed. See [teaching tools](docs/TEACHING-TOOLS.md) for usage and limits.
+**[Download v0.4.0 Windows preview](https://github.com/Nyi-Nyi-Zin/Sketchora/actions/runs/41862842797/artifacts/13341131340)** · [Passing Windows build and all 92 tests](https://github.com/Nyi-Nyi-Zin/Sketchora/actions/runs/41862842797)
 
-For this update, open the v0.4.0 run above after it succeeds (older successful runs contain earlier versions). You can also browse [Build and test Sketchora](https://github.com/Nyi-Nyi-Zin/Sketchora/actions/workflows/build.yml), then download the **Sketchora-win-x64** artifact. GitHub may require sign-in. Extract the ZIP and open `Sketchora.exe`, keeping the extracted files together. It is a self-contained, unsigned Windows 11 x64 portable app, not an installer. Actions artifacts expire; use a current successful run.
+Includes all eight teaching additions, compact startup, live shortcut hints and the custom app icon. See [teaching tools](docs/TEACHING-TOOLS.md) for usage and limits.
+
+For this update, download the v0.4.0 artifact above (older successful runs contain earlier versions). You can also browse [Build and test Sketchora](https://github.com/Nyi-Nyi-Zin/Sketchora/actions/workflows/build.yml), then download the **Sketchora-win-x64** artifact. GitHub may require sign-in. Extract the ZIP and open `Sketchora.exe`, keeping the extracted files together. It is a self-contained, unsigned Windows 11 x64 portable app, not an installer. Actions artifacts expire; use a current successful run.
 
 To build from source with the .NET 10 SDK:
 
